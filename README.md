@@ -1,7 +1,7 @@
 Genesis client for OpenCart
 =============================
 
-This is a Payment Module for eMerchantPay that gives you the ability to process payments through eMerchantPay's Payment Gateway - Genesis.
+This is a Payment Module for E-ComProcessing that gives you the ability to process payments through E-ComProcessing’s Payment Gateway - Genesis.
 
 Requirements
 ------------
@@ -16,6 +16,6 @@ Setup
 
 1. Copy the files to the root folder of your OpenCart installation
 2. Login inside the Admin Panel
-3. Navigate to `Extensions -> Payments` and Enable one of the following: “eMerchantPay Direct” or “eMerchantPay Checkout”
+3. Navigate to `Extensions -> Payments` and Enable one of the following: “E-ComProcessing Direct” or “E-ComProcessing Checkout”
 4. Set the login credentials (Username, Password, Token) and adjust the configuration to your needs.
 5. You're now ready to process payments through our gateway.
