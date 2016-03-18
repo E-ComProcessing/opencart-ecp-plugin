@@ -1,15 +1,29 @@
 <?php
+/*
+ * Copyright (C) 2016 E-ComProcessing™
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * @author      E-ComProcessing
+ * @copyright   2016 E-ComProcessing™
+ * @license     http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
+ */
+
+/**
+ * Front-end model for the "E-ComProcessing Direct" module
+ *
+ * @package EComProcessingDirect
+ */
 class ModelPaymentEComProcessingDirect extends Model
 {
-	const REQUEST_AUTHORIZE         = 1;
-	const REQUEST_SALE              = 2;
-	const REQUEST_INIT_RECURRING    = 3;
-
-	const REQUEST_AUTHORIZE_3D      = 11;
-	const REQUEST_SALE_3D           = 12;
-	const REQUEST_INIT_RECURRING_3D = 13;
-
-
 	/**
 	 * Main method
 	 *
@@ -18,7 +32,8 @@ class ModelPaymentEComProcessingDirect extends Model
 	 *
 	 * @return array
 	 */
-	public function getMethod($address, $total) {
+	public function getMethod($address, $total)
+	{
 		$this->load->language('payment/ecomprocessing_direct');
 
 		$query = $this->db->query("SELECT * FROM " . DB_PREFIX . "zone_to_geo_zone WHERE geo_zone_id = '" . (int)$this->config->get('ecomprocessing_direct_geo_zone_id') . "' AND country_id = '" . (int)$address['country_id'] . "' AND (zone_id = '" . (int)$address['zone_id'] . "' OR zone_id = '0')");
@@ -30,6 +45,10 @@ class ModelPaymentEComProcessingDirect extends Model
 		} elseif ($query->num_rows) {
 			$status = true;
 		} else {
+			$status = false;
+		}
+
+		if (!$this->isSecureConnection()) {
 			$status = false;
 		}
 
@@ -52,64 +71,101 @@ class ModelPaymentEComProcessingDirect extends Model
 	 *
 	 * @param $data array
 	 */
-	public function addTransaction($data) {
+	public function addTransaction($data)
+	{
 		try {
-			foreach($data as $column => &$value) {
-				$value = $this->db->escape($value);
-			}
+			$fields = implode(', ', array_map(
+					function ($v, $k) {
+						return sprintf('`%s`', $k);
+					},
+					$data,
+					array_keys($data)
+				)
+			);
+
+			$values = implode(', ', array_map(
+					function ($v) {
+						return sprintf("'%s'", $v);
+					},
+					$data,
+					array_keys($data)
+				)
+			);
 
 			$this->db->query("
-				INSERT INTO
-					`" . DB_PREFIX . "ecomprocessing_direct_transactions`
-				SET
-					`unique_id` = '" . $data['unique_id'] . "',
-					`order_id`  = '" . $data['order_id'] . "',
-					`reference_id` = '" . $data['reference_id'] . "',
-					`type` = '" . $data['type'] . "',
-					`mode` = '" . $data['mode'] . "',
-					`timestamp` = '" . $data['timestamp'] . "',
-					`status` = '" . $data['status'] . "',
-					`message` = '" . $data['message'] . "',
-					`technical_message` = '" . $data['technical_message'] . "',
-					`amount` = '" . $data['amount'] . "',
-					`currency` = '" . $data['currency'] . "';
-			");
-		}
-		catch (Exception $exception) {
+                INSERT INTO
+                    `" . DB_PREFIX . "ecomprocessing_direct_transactions` (" . $fields . ")
+                VALUES
+                    (" . $values . ")
+            ");
+		} catch (Exception $exception) {
 			$this->logEx($exception);
 		}
 	}
 
-
 	/**
-	 * Update transaction inside the database
+	 * Update existing transaction in the database
 	 *
 	 * @param $data array
 	 */
-	public function editTransaction($data) {
+	public function updateTransaction($data)
+	{
 		try {
-			foreach($data as $column => &$value) {
-				$value = $this->db->escape($value);
-			}
+			$fields = implode(', ', array_map(
+					function ($v, $k) {
+						return sprintf("`%s` = '%s'", $k, $v);
+					},
+					$data,
+					array_keys($data)
+				)
+			);
 
 			$this->db->query("
-				UPDATE
-					`" . DB_PREFIX . "ecomprocessing_direct_transactions`
-				SET
-					`reference_id` = '" . $data['reference_id'] . "',
-					`type` = '" . $data['type'] . "',
-					`mode` = '" . $data['mode'] . "',
-					`timestamp` = '" . $data['timestamp'] . "',
-					`status` = '" . $data['status'] . "',
-					`message` = '" . $data['message'] . "',
-					`technical_message` = '" . $data['technical_message'] . "',
-					`amount` = '" . $data['amount'] . "',
-					`currency` = '" . $data['currency'] . "'
-				WHERE
-					`unique_id` = '" . $data['unique_id'] . "';
-			");
+                UPDATE
+                    `" . DB_PREFIX . "ecomprocessing_direct_transactions`
+                SET
+                    " . $fields . "
+                WHERE
+                    `unique_id` = '" . $data['unique_id'] . "'
+            ");
+		} catch (Exception $exception) {
+			$this->logEx($exception);
 		}
-		catch (Exception $exception) {
+	}
+
+	/**
+	 * Sanitize transaction data and check
+	 * whether an UPDATE or INSERT is required
+	 *
+	 * @param array $data
+	 */
+	public function populateTransaction($data = array())
+	{
+		try {
+			$self = $this;
+
+			// Sanitize the input data
+			array_walk($data, function (&$column, &$value) use ($self) {
+				$column = $self->db->escape($column);
+				$value  = $self->db->escape($value);
+			});
+
+			// Check if transaction exists
+			$insertQuery = $this->db->query("
+                SELECT
+                    *
+                FROM
+                    `" . DB_PREFIX . "ecomprocessing_direct_transactions`
+                WHERE
+                    `unique_id` = '" . $data['unique_id'] . "'
+            ");
+
+			if ($insertQuery->rows) {
+				$this->updateTransaction($data);
+			} else {
+				$this->addTransaction($data);
+			}
+		} catch (Exception $exception) {
 			$this->logEx($exception);
 		}
 	}
@@ -121,7 +177,8 @@ class ModelPaymentEComProcessingDirect extends Model
 	 *
 	 * @return bool|mixed
 	 */
-	public function getTransactionById($reference_id) {
+	public function getTransactionById($reference_id)
+	{
 		$query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "ecomprocessing_direct_transactions` WHERE `unique_id` = '" . $this->db->escape($reference_id) . "' LIMIT 1");
 
 		if ($query->num_rows) {
@@ -135,113 +192,84 @@ class ModelPaymentEComProcessingDirect extends Model
 	 * Send transaction to Genesis
 	 *
 	 * @param $data array Transaction Data
-	 *
 	 * @return mixed
+	 * @throws Exception
 	 */
-	public function sendTransaction($data) {
+	public function sendTransaction($data)
+	{
 		try {
 			$this->bootstrap();
 
 			switch ($this->config->get('ecomprocessing_direct_transaction_type')) {
-				case self::REQUEST_AUTHORIZE:
-					$genesis = new \Genesis\Genesis( 'Financial\Authorize' );
-					break;
-				case self::REQUEST_AUTHORIZE_3D:
-					$genesis = new \Genesis\Genesis( 'Financial\Authorize3D' );
-					break;
-				case self::REQUEST_INIT_RECURRING:
-					$genesis = new \Genesis\Genesis( 'Financial\Recurring\InitRecurringSale' );
-					break;
-				case self::REQUEST_INIT_RECURRING_3D:
-					$genesis = new \Genesis\Genesis( 'Financial\Recurring\InitRecurringSale3D' );
-					break;
-				case self::REQUEST_SALE:
-					$genesis = new \Genesis\Genesis( 'Financial\Sale' );
-					break;
-				case self::REQUEST_SALE_3D:
-					$genesis = new \Genesis\Genesis( 'Financial\Sale3D' );
-					break;
 				default:
-					$genesis = null;
+				case \Genesis\API\Constants\Transaction\Types::AUTHORIZE:
+					$genesis = new \Genesis\Genesis('Financial\Cards\Authorize');
+					break;
+				case \Genesis\API\Constants\Transaction\Types::AUTHORIZE_3D:
+					$genesis = new \Genesis\Genesis('Financial\Cards\Authorize3D');
+					break;
+				case \Genesis\API\Constants\Transaction\Types::SALE:
+					$genesis = new \Genesis\Genesis('Financial\Cards\Sale');
+					break;
+				case \Genesis\API\Constants\Transaction\Types::SALE_3D:
+					$genesis = new \Genesis\Genesis('Financial\Cards\Sale3D');
 					break;
 			}
 
 			$genesis
 				->request()
-					->setTransactionId($data['transaction_id'])
-					->setRemoteIp($data['remote_address'])
+				->setTransactionId($data['transaction_id'])
+				->setRemoteIp($data['remote_address'])
+				// Financial
+				->setCurrency($data['currency'])
+				->setAmount($data['amount'])
+				->setUsage($data['usage'])
+				// Personal
+				->setCustomerEmail($data['customer_email'])
+				->setCustomerPhone($data['customer_phone'])
+				// CC
+				->setCardHolder($data['card_holder'])
+				->setCardNumber($data['card_number'])
+				->setCvv($data['cvv'])
+				->setExpirationMonth($data['expiration_month'])
+				->setExpirationYear($data['expiration_year'])
+				// Billing
+				->setBillingFirstName($data['billing']['first_name'])
+				->setBillingLastName($data['billing']['last_name'])
+				->setBillingAddress1($data['billing']['address1'])
+				->setBillingAddress2($data['billing']['address2'])
+				->setBillingZipCode($data['billing']['zip'])
+				->setBillingCity($data['billing']['city'])
+				->setBillingState($data['billing']['state'])
+				->setBillingCountry($data['billing']['country'])
+				// Shipping
+				->setShippingFirstName($data['shipping']['first_name'])
+				->setShippingLastName($data['shipping']['last_name'])
+				->setShippingAddress1($data['shipping']['address1'])
+				->setShippingAddress2($data['shipping']['address2'])
+				->setShippingZipCode($data['shipping']['zip'])
+				->setShippingCity($data['shipping']['city'])
+				->setShippingState($data['shipping']['state'])
+				->setShippingCountry($data['shipping']['country']);
 
-					// Financial
-					->setCurrency($data['currency'])
-					->setAmount($data['amount'])
-
-					// Personal
-					->setCustomerEmail($data['customer_email'])
-					->setCustomerPhone($data['customer_phone'])
-
-					// CC
-					->setCardHolder($data['card_holder'])
-					->setCardNumber($data['card_number'])
-					->setCvv($data['cvv'])
-					->setExpirationMonth($data['expiration_month'])
-					->setExpirationYear($data['expiration_year'])
-
-					// Billing
-					->setBillingFirstName($data['billing']['first_name'])
-					->setBillingLastName($data['billing']['last_name'])
-					->setBillingAddress1($data['billing']['address1'])
-					->setBillingAddress2($data['billing']['address2'])
-					->setBillingZipCode($data['billing']['zip'])
-					->setBillingCity($data['billing']['city'])
-					->setBillingState($data['billing']['state'])
-					->setBillingCountry($data['billing']['country'])
-
-					// Shipping
-					->setShippingFirstName($data['shipping']['first_name'])
-					->setShippingLastName($data['shipping']['last_name'])
-					->setShippingAddress1($data['shipping']['address1'])
-					->setShippingAddress2($data['shipping']['address2'])
-					->setShippingZipCode($data['shipping']['zip'])
-					->setShippingCity($data['shipping']['city'])
-					->setShippingState($data['shipping']['state'])
-					->setShippingCountry($data['shipping']['country']);
-
-			if (in_array(
-					$this->config->get('ecomprocessing_direct_transaction_type'),
-					array(
-						self::REQUEST_AUTHORIZE_3D, self::REQUEST_SALE_3D, self::REQUEST_INIT_RECURRING_3D
-					)
-				))
-			{
+			if ($this->is3dTransaction()) {
 				$genesis
 					->request()
-						->setNotificationUrl($this->url->link('payment/ecomprocessing_direct/callback', '', 'SSL'))
-						->setReturnSuccessUrl($this->url->link('payment/ecomprocessing_direct/success', '', 'SSL'))
-						->setReturnFailureUrl($this->url->link('payment/ecomprocessing_direct/failure', '', 'SSL'));
+					->setNotificationUrl($data['notification_url'])
+					->setReturnSuccessUrl($data['return_success_url'])
+					->setReturnFailureUrl($data['return_failure_url']);
 
 			}
 
 			$genesis->execute();
 
-			if ($genesis->response()->isSuccessful()) {
-				$response = array(
-					'error'     => false,
-					'message'   => strval($genesis->response()->getResponseObject()->message),
-					'response'  => $genesis->response()->getResponseObject()
-				);
-			}
-			else {
-				$response = array(
-					'error'     => true,
-					'message'   => strval($genesis->response()->getResponseObject()->message),
-					'response'  => $genesis->response()->getResponseObject()
-				);
-			}
-
-			return (object)$response;
-		}
-		catch (Exception $exception) {
+			return $genesis->response()->getResponseObject();
+		} catch (\Genesis\Exceptions\ErrorAPI $api) {
+			throw $api;
+		} catch (\Exception $exception) {
 			$this->logEx($exception);
+
+			return false;
 		}
 	}
 
@@ -249,39 +277,28 @@ class ModelPaymentEComProcessingDirect extends Model
 	 * Genesis Request - Reconcile
 	 *
 	 * @param $unique_id string - Id of a Genesis Transaction
-	 *
 	 * @return mixed
+	 * @throws Exception
 	 */
-	public function reconcile($unique_id) {
+	public function reconcile($unique_id)
+	{
 		try {
 			$this->bootstrap();
 
-			$genesis = new \Genesis\Genesis('Reconcile\Transaction');
+			$genesis = new \Genesis\Genesis('WPF\Reconcile');
 
-			$genesis
-				->request()
-					->setUniqueId($unique_id);
+			$genesis->request()->setUniqueId($unique_id);
 
 			$genesis->execute();
 
-			$response = array(
-				'message'   => strval($genesis->response()->getResponseObject()->message),
-				'response'  => $genesis->response()->getResponseObject()
-			);
-
-			return (object)$response;
-		}
-		catch (Exception $exception) {
+			return $genesis->response()->getResponseObject();
+		} catch (\Genesis\Exceptions\ErrorAPI $api) {
+			throw $api;
+		} catch (\Exception $exception) {
 			$this->logEx($exception);
-		}
-	}
 
-	public function convertCurrency($amount, $currency) {
-		if (!class_exists('\Genesis\Genesis')) {
-			$this->model_payment_ecomprocessing_direct->bootstrapGenesis();
+			return false;
 		}
-
-		return \Genesis\Utils\Currency::exponentToReal($amount, $currency);
 	}
 
 	/**
@@ -289,19 +306,149 @@ class ModelPaymentEComProcessingDirect extends Model
 	 *
 	 * @return void
 	 */
-	public function bootstrap() {
-		// Look for, but DO NOT try to load via Autoloader magic methods
+	public function bootstrap()
+	{
+		// Look for, but DO NOT try to load via Auto-loader magic methods
 		if (!class_exists('\Genesis\Genesis', false)) {
-			include DIR_APPLICATION . '/model/payment/libraries/genesis_php/vendor/autoload.php';
+			include DIR_APPLICATION . '/../admin/model/payment/ecomprocessing/genesis/vendor/autoload.php';
 
-			$environment = ( intval( $this->config->get( 'ecomprocessing_direct_sandbox' ) ) == 1 ? 'sandbox' : 'production' );
+			\Genesis\Config::setEndpoint(
+				\Genesis\API\Constants\Endpoints::ECOMPROCESSING
+			);
 
-			\Genesis\GenesisConfig::setUsername( $this->config->get( 'ecomprocessing_direct_username' ) );
-			\Genesis\GenesisConfig::setPassword( $this->config->get( 'ecomprocessing_direct_password' ) );
-			\Genesis\GenesisConfig::setToken( $this->config->get( 'ecomprocessing_direct_token' ) );
+			\Genesis\Config::setUsername(
+				$this->config->get('ecomprocessing_direct_username')
+			);
 
-			\Genesis\GenesisConfig::setEnvironment( $environment );
+			\Genesis\Config::setPassword(
+				$this->config->get('ecomprocessing_direct_password')
+			);
+
+			\Genesis\Config::setToken(
+				$this->config->get('ecomprocessing_direct_token')
+			);
+
+			\Genesis\Config::setEnvironment(
+				$this->config->get('ecomprocessing_direct_sandbox')
+					? \Genesis\API\Constants\Environments::STAGING
+					: \Genesis\API\Constants\Environments::PRODUCTION
+			);
 		}
+	}
+
+	/**
+	 * Check whether the selected transaction type is a 3d transaction
+	 *
+	 * @return bool
+	 */
+	public function is3dTransaction()
+	{
+		$types = array(
+			\Genesis\API\Constants\Transaction\Types::AUTHORIZE_3D,
+			\Genesis\API\Constants\Transaction\Types::SALE_3D,
+		);
+
+		$transaction_type = $this->config->get('ecomprocessing_direct_transaction_type');
+
+		return in_array($transaction_type, $types);
+	}
+
+	/**
+	 * Check if the current visitor is on HTTPS
+	 *
+	 * @return bool
+	 */
+	public function isSecureConnection()
+	{
+		if (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) != 'off') {
+			return true;
+		}
+
+		if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') {
+			return true;
+		}
+
+		if (!empty($_SERVER['HTTP_X_FORWARDED_PORT']) && $_SERVER['HTTP_X_FORWARDED_PORT'] == '443') {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Generate Transaction Id based on the order id
+	 * and salted to avoid duplication
+	 *
+	 * @param string $prefix
+	 *
+	 * @return string
+	 */
+	public function genTransactionId($prefix = '')
+	{
+		$hash = md5(microtime(true) . uniqid() . mt_rand(PHP_INT_SIZE, PHP_INT_MAX));
+
+		return (string)$prefix . substr($hash, -(strlen($hash) - strlen($prefix)));
+	}
+
+	/**
+	 * Get the current front-end language
+	 *
+	 * @return string
+	 */
+	public function getLanguage()
+	{
+		$language = isset($this->session->data['language'])
+			? $this->session->data['language']
+			: $this->config->get('config_language');
+
+		$language_code = substr($language, 0, 2);
+
+		$this->bootstrap();
+
+		$isAvailable = @constant('\Genesis\API\Constants\i18n::' . strtoupper($language_code));
+
+		if ($isAvailable) {
+			return strtolower($language_code);
+		} else {
+			return 'en';
+		}
+	}
+
+	/**
+	 * Get a description-formatted list of products
+	 * inside an order
+	 *
+	 * @param $order_id
+	 * @return string
+	 */
+	public function getOrderProducts($order_id)
+	{
+		$order_product_query = $this->db->query("
+            SELECT
+                *
+            FROM
+                " . DB_PREFIX . "order_product
+            WHERE
+                order_id = '" . abs((int)$order_id) . "'
+            ");
+
+		$description = '';
+
+		foreach ($order_product_query->rows as $order_product) {
+			$description .= sprintf("%s (%s) x %d\r\n", $order_product['name'], $order_product['model'], $order_product['quantity']);
+		}
+
+		return $description;
+	}
+
+	/**
+	 * Get a Usage string with the Store Name
+	 *
+	 * @return string
+	 */
+	public function getUsage()
+	{
+		return sprintf('%s direct transaction', $this->config->get('config_name'));
 	}
 
 	/**
@@ -309,7 +456,8 @@ class ModelPaymentEComProcessingDirect extends Model
 	 *
 	 * @param $exception
 	 */
-	public function logEx($exception) {
+	public function logEx($exception)
+	{
 		if ($this->config->get('ecomprocessing_direct_debug')) {
 			$log = new Log('ecomprocessing_direct.log');
 			$log->write($this->jTraceEx($exception));
@@ -319,18 +467,19 @@ class ModelPaymentEComProcessingDirect extends Model
 	/**
 	 * jTraceEx() - provide a Java style exception trace
 	 * @param $e Exception
-	 * @param $seen      - array passed to recursive calls to accumulate trace lines already seen
+	 * @param $seen - array passed to recursive calls to accumulate trace lines already seen
 	 *                     leave as NULL when calling this function
 	 * @return array of strings, one entry per trace line
 	 */
-	private function jTraceEx($e, $seen=null) {
+	private function jTraceEx($e, $seen = null)
+	{
 		$starter = $seen ? 'Caused by: ' : '';
-		$result = array();
+		$result  = array();
 
 		if (!$seen) $seen = array();
 
-		$trace  = $e->getTrace();
-		$prev   = $e->getPrevious();
+		$trace = $e->getTrace();
+		$prev  = $e->getPrevious();
 
 		$result[] = sprintf('%s%s: %s', $starter, get_class($e), $e->getMessage());
 
@@ -340,7 +489,7 @@ class ModelPaymentEComProcessingDirect extends Model
 		while (true) {
 			$current = "$file:$line";
 			if (is_array($seen) && in_array($current, $seen)) {
-				$result[] = sprintf(' ... %d more', count($trace)+1);
+				$result[] = sprintf(' ... %d more', count($trace) + 1);
 				break;
 			}
 			$result[] = sprintf(' at %s%s%s(%s%s%s)',
@@ -362,7 +511,7 @@ class ModelPaymentEComProcessingDirect extends Model
 		$result = join("\n", $result);
 
 		if ($prev)
-			$result  .= "\n" . $this->jTraceEx($prev, $seen);
+			$result .= "\n" . $this->jTraceEx($prev, $seen);
 
 		return $result;
 	}
