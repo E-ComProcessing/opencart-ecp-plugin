@@ -25,10 +25,18 @@
 class ModelPaymentEComProcessingCheckout extends Model
 {
 	/**
-	 * Perform installation logic
-	 *
-	 * @return void
-	 */
+     * Holds the current module version
+     * Will be displayed on Admin Settings Form
+     *
+     * @var string
+     */
+    protected $module_version = "1.3.0";
+
+    /**
+     * Perform installation logic
+     *
+     * @return void
+     */
 	public function install()
 	{
 		$this->db->query("
@@ -581,4 +589,14 @@ class ModelPaymentEComProcessingCheckout extends Model
 
 		return $result;
 	}
+
+    /**
+     * Retrieves the Module Method Version
+     *
+     * @return string
+     */
+    public function getVersion()
+    {
+        return $this->module_version;
+    }
 }

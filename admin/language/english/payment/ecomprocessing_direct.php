@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (C) 2016 eMerchantPay Ltd.
+ * Copyright (C) 2016 E-ComProcessing™
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -12,8 +12,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * @author      eMerchantPay
- * @copyright   2016 eMerchantPay Ltd.
+ * @author      E-ComProcessing
+ * @copyright   2016 E-ComProcessing™
  * @license     http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
  */
 
@@ -24,7 +24,7 @@ $_['heading_title'] = 'E-ComProcessing Direct';
 $_['text_payment']  = 'Payment';
 $_['text_success']  = 'Success: You have modified your E-ComProcessing configuration!';
 $_['text_failed']   = 'Failed: An error has occured saving your E-ComProcessing configuration!';
-$_['text_edit']     = 'Edit eMerchantPay Direct';
+$_['text_edit']     = 'Edit E-ComProcessing Direct';
 $_['text_yes']      = 'Yes';
 $_['text_no']       = 'No';
 $_['text_required'] = 'This field is required!';
@@ -47,7 +47,7 @@ $_['entry_supports_void']            = 'Cancel Transaction';
 $_['entry_total']                    = 'Total';
 $_['entry_order_status']             = 'Order Status';
 $_['entry_async_order_status']       = 'Order Status (Async)';
-$_['entry_failure_order_status']     = 'Order Status (Failed)';
+$_['entry_order_status_failure']     = 'Order Status (Failed)';
 $_['entry_geo_zone']                 = 'Geo Zone';
 $_['entry_status']                   = 'Status';
 $_['entry_debug']                    = 'Error Logging';
@@ -62,7 +62,7 @@ $_['text_transaction_init_recurring']    = 'Recurring';
 $_['text_transaction_init_recurring_3d'] = 'Recurring 3D-Secure';
 
 // Transaction View
-$_['text_payment_info']          = 'eMerchantPay transactions';
+$_['text_payment_info']          = 'E-ComProcessing transactions';
 $_['text_transaction_id']        = 'Transaction ID';
 $_['text_transaction_timestamp'] = 'Date/Time';
 $_['text_transaction_amount']    = 'Amount';
