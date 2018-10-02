@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (C) 2016 E-ComProcessing™
+ * Copyright (C) 2018 E-ComProcessing Ltd.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -12,13 +12,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * @author      E-ComProcessing
- * @copyright   2016 E-ComProcessing™
- * @license     http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
+ * @author	  E-ComProcessing
+ * @copyright   2018 E-ComProcessing Ltd.
+ * @license	 http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
  */
 
 if (!class_exists('ControllerPaymentEComProcessingBase')) {
-    require_once DIR_APPLICATION . "controller/payment/ecomprocessing/base_controller.php";
+	require_once DIR_APPLICATION . "controller/payment/ecomprocessing/base_controller.php";
 }
 
 /**
@@ -28,20 +28,20 @@ if (!class_exists('ControllerPaymentEComProcessingBase')) {
  */
 class ControllerPaymentEComProcessingCheckout extends ControllerPaymentEComProcessingBase
 {
-    /**
-     * Module Name (Used in View - Templates)
-     *
-     * @var string
-     */
-    protected $module_name = 'ecomprocessing_checkout';
+	/**
+	 * Module Name (Used in View - Templates)
+	 *
+	 * @var string
+	 */
+	protected $module_name = 'ecomprocessing_checkout';
 
-    /**
-     * Used to find out if the payment method requires SSL
-     *
-     * @return bool
-     */
-    protected function getModuleRequiresSSL()
-    {
-        return false;
-    }
+	/**
+	 * Used to find out if the payment method requires SSL
+	 *
+	 * @return bool
+	 */
+	protected function isModuleRequiresSsl()
+	{
+		return false;
+	}
 }

@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (C) 2016 E-ComProcessing™
+ * Copyright (C) 2018 E-ComProcessing Ltd.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -13,12 +13,12 @@
  * GNU General Public License for more details.
  *
  * @author      E-ComProcessing
- * @copyright   2016 E-ComProcessing™
+ * @copyright   2018 E-ComProcessing Ltd.
  * @license     http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
  */
 
 if (!class_exists('ControllerPaymentEComProcessingCheckout')) {
-    require_once DIR_APPLICATION . 'controller/payment/ecomprocessing_checkout.php';
+	require_once DIR_APPLICATION . 'controller/payment/ecomprocessing_checkout.php';
 }
 
 /**

@@ -17,16 +17,16 @@
  * @license     http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
  */
 
-if (!class_exists('ControllerPaymentEComProcessingDirect')) {
-	require_once DIR_APPLICATION . 'controller/payment/ecomprocessing_direct.php';
+if (!class_exists('ModelPaymentEComProcessingCheckout')) {
+	require_once DIR_APPLICATION . 'model/payment/ecomprocessing_checkout.php';
 }
 
 /**
- * Front-end controller for the "E-ComProcessing Direct" module (2.3.x and above)
+ * Front-end model for the "E-ComProcessing Checkout" module (3.0.x and above)
  *
- * @package EComProcessingDirect
+ * @package EComProcessingCheckout
  */
-class ControllerExtensionPaymentEComProcessingDirect extends ControllerPaymentEComProcessingDirect
+class ModelExtensionPaymentEComProcessingCheckout extends ModelPaymentEComProcessingCheckout
 {
 
 }

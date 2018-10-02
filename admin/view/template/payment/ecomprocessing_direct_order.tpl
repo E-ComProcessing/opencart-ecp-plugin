@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (C) 2016 E-ComProcessing™
+ * Copyright (C) 2018 E-ComProcessing Ltd.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -13,7 +13,7 @@
  * GNU General Public License for more details.
  *
  * @author      E-ComProcessing
- * @copyright   2016 E-ComProcessing™
+ * @copyright   2018 E-ComProcessing Ltd.
  * @license     http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
  */
 ?>
@@ -30,94 +30,94 @@
         <div id="collapseOne" class="panel-collapse collapse in">
             <table class="table table-hover tree">
                 <thead>
-                <tr>
-                    <th><?php echo $text_transaction_id; ?></th>
-                    <th><?php echo $text_transaction_type; ?></th>
-                    <th><?php echo $text_transaction_timestamp; ?></th>
-                    <th><?php echo $text_transaction_amount; ?></th>
-                    <th><?php echo $text_transaction_status; ?></th>
-                    <th><?php echo $text_transaction_message; ?></th>
-                    <th><?php echo $text_transaction_mode; ?></th>
-                    <th><?php echo $text_transaction_action; ?></th>
-                    <th><?php echo $text_transaction_action; ?></th>
-                    <th><?php echo $text_transaction_action; ?></th>
-                </tr>
+                    <tr>
+                        <th><?php echo $text_transaction_id; ?></th>
+                        <th><?php echo $text_transaction_type; ?></th>
+                        <th><?php echo $text_transaction_timestamp; ?></th>
+                        <th><?php echo $text_transaction_amount; ?></th>
+                        <th><?php echo $text_transaction_status; ?></th>
+                        <th><?php echo $text_transaction_message; ?></th>
+                        <th><?php echo $text_transaction_mode; ?></th>
+                        <th><?php echo $text_transaction_action; ?></th>
+                        <th><?php echo $text_transaction_action; ?></th>
+                        <th><?php echo $text_transaction_action; ?></th>
+                    </tr>
                 </thead>
 
                 <tbody>
                 <?php foreach ($transactions as $transaction) { ?>
-                <tr class="treegrid-<?php echo $transaction['unique_id'];?> <?php if(strlen($transaction['reference_id']) > 1): ?> treegrid-parent-<?php echo $transaction['reference_id'];?> <?php endif;?>">
-                    <td class="text-left">
-                        <?php echo $transaction['unique_id'];?>
-                    </td>
-                    <td class="text-left">
-                        <?php echo $transaction['type']; ?>
-                    </td>
-                    <td class="text-left">
-                        <?php echo $transaction['timestamp']; ?>
-                    </td>
-                    <td class="text-right">
-                        <?php echo $transaction['amount']; ?>
-                    </td>
-                    <td class="text-left">
-                        <?php echo $transaction['status']; ?>
-                    </td>
-                    <td class="text-left">
-                        <?php echo $transaction['message']; ?>
-                    </td>
-                    <td class="text-left">
-                        <?php echo $transaction['mode']; ?>
-                    </td>
-                    <td class="text-center">
-                        <?php if ($transaction['can_capture']) { ?>
-                        <div class="transaction-action-button">
-                            <a class="button btn btn-success" id="button-capture" role="button" data-type="capture" data-reference-id="<?php echo $transaction['unique_id'];?>">
-                                <i class="fa fa-check fa-lg"></i>
-                            </a>
+                    <tr class="treegrid-<?php echo $transaction['unique_id'];?> <?php if(strlen($transaction['reference_id']) > 1): ?> treegrid-parent-<?php echo $transaction['reference_id'];?> <?php endif;?>">
+                        <td class="text-left">
+                            <?php echo $transaction['unique_id'];?>
+                        </td>
+                        <td class="text-left">
+                            <?php echo $transaction['type']; ?>
+                        </td>
+                        <td class="text-left">
+                            <?php echo $transaction['timestamp']; ?>
+                        </td>
+                        <td class="text-right">
+                            <?php echo $transaction['amount']; ?>
+                        </td>
+                        <td class="text-left">
+                            <?php echo $transaction['status']; ?>
+                        </td>
+                        <td class="text-left">
+                            <?php echo $transaction['message']; ?>
+                        </td>
+                        <td class="text-left">
+                            <?php echo $transaction['mode']; ?>
+                        </td>
+                        <td class="text-center">
+                            <?php if ($transaction['can_capture']) { ?>
+                                <div class="transaction-action-button">
+                                    <a class="button btn btn-success" id="button-capture" role="button" data-type="capture" data-reference-id="<?php echo $transaction['unique_id'];?>">
+                                        <i class="fa fa-check fa-lg"></i>
+                                    </a>
                                     <span class="btn btn-primary" id="img_loading_capture" style="display:none;">
                                         <i class="fa fa-circle-o-notch fa-spin fa-lg"></i>
                                     </span>
-                        </div>
-                        <?php } ?>
-                    </td>
-                    <td class="text-center">
-                        <?php if ($transaction['can_refund']) { ?>
-                        <div class="transaction-action-button">
-                            <a class="button btn btn-warning" id="button-refund" role="button" data-type="refund" data-reference-id="<?php echo $transaction['unique_id'];?>">
-                                <i class="fa fa-reply fa-lg"></i>
-                            </a>
+                                </div>
+                            <?php } ?>
+                        </td>
+                        <td class="text-center">
+                            <?php if ($transaction['can_refund']) { ?>
+                                <div class="transaction-action-button">
+                                    <a class="button btn btn-warning" id="button-refund" role="button" data-type="refund" data-reference-id="<?php echo $transaction['unique_id'];?>">
+                                        <i class="fa fa-reply fa-lg"></i>
+                                    </a>
                                     <span class="btn btn-primary" id="img_loading_rebate" style="display:none;">
                                         <i class="fa fa-circle-o-notch fa-spin fa-lg"></i>
                                     </span>
-                        </div>
-                        <?php } ?>
-                    </td>
-                    <td class="text-center">
-                        <?php if ($transaction['can_void']) { ?>
-                        <div class="transaction-action-button">
-                            <a class="button btn btn-danger" id="button-void"
-                            <?php if (!$ecomprocessing_direct_supports_void) { ?>
-                            data-toggle="tooltip" data-placement="bottom" title="<?php echo $help_transaction_option_cancel_denied;?>"
-                            <?php }
+                                </div>
+                            <?php } ?>
+                        </td>
+                        <td class="text-center">
+                            <?php if ($transaction['can_void']) { ?>
+                                <div class="transaction-action-button">
+                                    <a class="button btn btn-danger" id="button-void"
+                                        <?php if (!$ecomprocessing_direct_supports_void) { ?>
+                                            data-toggle="tooltip" data-placement="bottom" title="<?php echo $help_transaction_option_cancel_denied;?>"
+                                        <?php }
                                         else if ($transaction['void_exists']) { ?>
-                            data-toggle="tooltip" data-placement="bottom"
-                            title="There is already an approved <strong>Cancel Transaction</strong> for <strong><?php echo ucfirst($transaction['type']);?> Transaction</strong> with Unique Id: <strong><?php echo $transaction['unique_id'];?></strong>"
-                            <?php } ?>
+                                            data-toggle="tooltip" data-placement="bottom"
+                                            title="There is already an approved <strong>Cancel Transaction</strong> for <strong><?php echo ucfirst($transaction['type']);?> Transaction</strong> with Unique Id: <strong><?php echo $transaction['unique_id'];?></strong>"
+                                        <?php } ?>
 
-                            <?php if (!$ecomprocessing_direct_supports_void || $transaction['void_exists']) { ?>
-                            disabled="disabled"
-                            <?php } ?>
+                                        <?php if (!$ecomprocessing_direct_supports_void || $transaction['void_exists']) { ?>
+                                            disabled="disabled"
+                                        <?php } ?>
 
-                            role="button" data-type="void" data-reference-id="<?php echo $transaction['unique_id'];?>">
-                            <i class="fa fa-remove fa-lg"></i>
-                            </a>
+                                        role="button" data-type="void" data-reference-id="<?php echo $transaction['unique_id'];?>">
+                                        <i class="fa fa-remove fa-lg"></i>
+                                    </a>
                                     <span class="btn btn-primary" id="img_loading_void" style="display:none;">
                                         <i class="fa fa-circle-o-notch fa-spin fa-lg"></i>
                                     </span>
-                        </div>
-                        <?php } ?>
-                    </td>
-                </tr>
+                                </div>
+                            <?php } ?>
+                        </td>
+                    </tr>
                 <?php } ?>
                 </tbody>
             </table>

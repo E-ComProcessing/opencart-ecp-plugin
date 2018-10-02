@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (C) 2016 E-ComProcessing™
+ * Copyright (C) 2018 E-ComProcessing Ltd.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -13,17 +13,26 @@
  * GNU General Public License for more details.
  *
  * @author      E-ComProcessing
- * @copyright   2016 E-ComProcessing™
+ * @copyright   2018 E-ComProcessing Ltd.
  * @license     http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
  */
+
+require_once DIR_APPLICATION . 'model/payment/ecomprocessing/base_model.php';
 
 /**
  * Front-end model for the "E-ComProcessing Direct" module
  *
  * @package EComProcessingDirect
  */
-class ModelPaymentEComProcessingDirect extends Model
+class ModelPaymentEComProcessingDirect extends ModelPaymentEComProcessingBase
 {
+	/**
+	 * Module Name
+	 *
+	 * @var string
+	 */
+	protected $module_name = 'ecomprocessing_direct';
+
 	/**
 	 * Main method
 	 *
@@ -75,8 +84,8 @@ class ModelPaymentEComProcessingDirect extends Model
 	{
 		try {
 			$fields = implode(', ', array_map(
-					function ($v, $k) {
-						return sprintf('`%s`', $k);
+					function ($value, $key) {
+						return sprintf('`%s`', $key);
 					},
 					$data,
 					array_keys($data)
@@ -84,8 +93,8 @@ class ModelPaymentEComProcessingDirect extends Model
 			);
 
 			$values = implode(', ', array_map(
-					function ($v) {
-						return sprintf("'%s'", $v);
+					function ($value) {
+						return sprintf("'%s'", $value);
 					},
 					$data,
 					array_keys($data)
@@ -93,11 +102,11 @@ class ModelPaymentEComProcessingDirect extends Model
 			);
 
 			$this->db->query("
-                INSERT INTO
-                    `" . DB_PREFIX . "ecomprocessing_direct_transactions` (" . $fields . ")
-                VALUES
-                    (" . $values . ")
-            ");
+				INSERT INTO
+					`" . DB_PREFIX . "ecomprocessing_direct_transactions` (" . $fields . ")
+				VALUES
+					(" . $values . ")
+			");
 		} catch (Exception $exception) {
 			$this->logEx($exception);
 		}
@@ -112,8 +121,8 @@ class ModelPaymentEComProcessingDirect extends Model
 	{
 		try {
 			$fields = implode(', ', array_map(
-					function ($v, $k) {
-						return sprintf("`%s` = '%s'", $k, $v);
+					function ($value, $key) {
+						return sprintf("`%s` = '%s'", $key, $value);
 					},
 					$data,
 					array_keys($data)
@@ -121,13 +130,13 @@ class ModelPaymentEComProcessingDirect extends Model
 			);
 
 			$this->db->query("
-                UPDATE
-                    `" . DB_PREFIX . "ecomprocessing_direct_transactions`
-                SET
-                    " . $fields . "
-                WHERE
-                    `unique_id` = '" . $data['unique_id'] . "'
-            ");
+				UPDATE
+					`" . DB_PREFIX . "ecomprocessing_direct_transactions`
+				SET
+					" . $fields . "
+				WHERE
+				    `unique_id` = '" . $data['unique_id'] . "'
+			");
 		} catch (Exception $exception) {
 			$this->logEx($exception);
 		}
@@ -151,7 +160,7 @@ class ModelPaymentEComProcessingDirect extends Model
 			});
 
 			// Check if transaction exists
-			$insertQuery = $this->db->query("
+			$insert_query = $this->db->query("
                 SELECT
                     *
                 FROM
@@ -160,7 +169,7 @@ class ModelPaymentEComProcessingDirect extends Model
                     `unique_id` = '" . $data['unique_id'] . "'
             ");
 
-			if ($insertQuery->rows) {
+			if ($insert_query->rows) {
 				$this->updateTransaction($data);
 			} else {
 				$this->addTransaction($data);
@@ -200,21 +209,11 @@ class ModelPaymentEComProcessingDirect extends Model
 		try {
 			$this->bootstrap();
 
-			switch ($this->config->get('ecomprocessing_direct_transaction_type')) {
-				default:
-				case \Genesis\API\Constants\Transaction\Types::AUTHORIZE:
-					$genesis = new \Genesis\Genesis('Financial\Cards\Authorize');
-					break;
-				case \Genesis\API\Constants\Transaction\Types::AUTHORIZE_3D:
-					$genesis = new \Genesis\Genesis('Financial\Cards\Authorize3D');
-					break;
-				case \Genesis\API\Constants\Transaction\Types::SALE:
-					$genesis = new \Genesis\Genesis('Financial\Cards\Sale');
-					break;
-				case \Genesis\API\Constants\Transaction\Types::SALE_3D:
-					$genesis = new \Genesis\Genesis('Financial\Cards\Sale3D');
-					break;
-			}
+			$genesis = $this->createGenesisRequest(
+				$this->config->get(
+					$this->isRecurringOrder() ? 'ecomprocessing_direct_recurring_transaction_type' : 'ecomprocessing_direct_transaction_type'
+				)
+			);
 
 			$genesis
 				->request()
@@ -258,7 +257,6 @@ class ModelPaymentEComProcessingDirect extends Model
 					->setNotificationUrl($data['notification_url'])
 					->setReturnSuccessUrl($data['return_success_url'])
 					->setReturnFailureUrl($data['return_failure_url']);
-
 			}
 
 			$genesis->execute();
@@ -329,9 +327,7 @@ class ModelPaymentEComProcessingDirect extends Model
 			);
 
 			\Genesis\Config::setEnvironment(
-				$this->config->get('ecomprocessing_direct_sandbox')
-					? \Genesis\API\Constants\Environments::STAGING
-					: \Genesis\API\Constants\Environments::PRODUCTION
+				$this->config->get('ecomprocessing_direct_sandbox') ? \Genesis\API\Constants\Environments::STAGING : \Genesis\API\Constants\Environments::PRODUCTION
 			);
 		}
 	}
@@ -346,9 +342,12 @@ class ModelPaymentEComProcessingDirect extends Model
 		$types = array(
 			\Genesis\API\Constants\Transaction\Types::AUTHORIZE_3D,
 			\Genesis\API\Constants\Transaction\Types::SALE_3D,
+			\Genesis\API\Constants\Transaction\Types::INIT_RECURRING_SALE_3D,
 		);
 
-		$transaction_type = $this->config->get('ecomprocessing_direct_transaction_type');
+		$transaction_type = $this->config->get(
+			$this->isRecurringOrder() ? 'ecomprocessing_direct_recurring_transaction_type' : 'ecomprocessing_direct_transaction_type'
+		);
 
 		return in_array($transaction_type, $types);
 	}
@@ -360,15 +359,15 @@ class ModelPaymentEComProcessingDirect extends Model
 	 */
 	public function isSecureConnection()
 	{
-		if (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) != 'off') {
+		if (!empty($this->request->server['HTTPS']) && strtolower($this->request->server['HTTPS']) != 'off') {
 			return true;
 		}
 
-		if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') {
+		if (!empty($this->request->server['HTTP_X_FORWARDED_PROTO']) && $this->request->server['HTTP_X_FORWARDED_PROTO'] == 'https') {
 			return true;
 		}
 
-		if (!empty($_SERVER['HTTP_X_FORWARDED_PORT']) && $_SERVER['HTTP_X_FORWARDED_PORT'] == '443') {
+		if (!empty($this->request->server['HTTP_X_FORWARDED_PORT']) && $this->request->server['HTTP_X_FORWARDED_PORT'] == '443') {
 			return true;
 		}
 
@@ -397,17 +396,15 @@ class ModelPaymentEComProcessingDirect extends Model
 	 */
 	public function getLanguage()
 	{
-		$language = isset($this->session->data['language'])
-			? $this->session->data['language']
-			: $this->config->get('config_language');
+		$language = isset($this->session->data['language']) ? $this->session->data['language'] : $this->config->get('config_language');
 
 		$language_code = substr($language, 0, 2);
 
 		$this->bootstrap();
 
-		$isAvailable = @constant('\Genesis\API\Constants\i18n::' . strtoupper($language_code));
+		$is_available = @constant('\Genesis\API\Constants\i18n::' . strtoupper($language_code));
 
-		if ($isAvailable) {
+		if ($is_available) {
 			return strtolower($language_code);
 		} else {
 			return 'en';
@@ -459,32 +456,34 @@ class ModelPaymentEComProcessingDirect extends Model
 	public function logEx($exception)
 	{
 		if ($this->config->get('ecomprocessing_direct_debug')) {
-			$log = new Log('ecomprocessing_direct.log');
+			$log = new Log('EComProcessing_direct.log');
 			$log->write($this->jTraceEx($exception));
 		}
 	}
 
 	/**
 	 * jTraceEx() - provide a Java style exception trace
-	 * @param $e Exception
+	 * @param $exception Exception
 	 * @param $seen - array passed to recursive calls to accumulate trace lines already seen
 	 *                     leave as NULL when calling this function
 	 * @return array of strings, one entry per trace line
+	 *
+	 * @SuppressWarnings(PHPMD)
 	 */
-	private function jTraceEx($e, $seen = null)
+	private function jTraceEx($exception, $seen = null)
 	{
-		$starter = $seen ? 'Caused by: ' : '';
+		$starter = ($seen) ? 'Caused by: ' : '';
 		$result  = array();
 
 		if (!$seen) $seen = array();
 
-		$trace = $e->getTrace();
-		$prev  = $e->getPrevious();
+		$trace = $exception->getTrace();
+		$prev  = $exception->getPrevious();
 
-		$result[] = sprintf('%s%s: %s', $starter, get_class($e), $e->getMessage());
+		$result[] = sprintf('%s%s: %s', $starter, get_class($exception), $exception->getMessage());
 
-		$file = $e->getFile();
-		$line = $e->getLine();
+		$file = $exception->getFile();
+		$line = $exception->getLine();
 
 		while (true) {
 			$current = "$file:$line";
@@ -496,15 +495,15 @@ class ModelPaymentEComProcessingDirect extends Model
 				count($trace) && array_key_exists('class', $trace[0]) ? str_replace('\\', '.', $trace[0]['class']) : '',
 				count($trace) && array_key_exists('class', $trace[0]) && array_key_exists('function', $trace[0]) ? '.' : '',
 				count($trace) && array_key_exists('function', $trace[0]) ? str_replace('\\', '.', $trace[0]['function']) : '(main)',
-				$line === null ? $file : basename($file),
-				$line === null ? '' : ':',
-				$line === null ? '' : $line);
+				($line === null) ? $file : basename($file),
+				($line === null) ? '' : ':',
+				($line === null) ? '' : $line);
 			if (is_array($seen))
 				$seen[] = "$file:$line";
 			if (!count($trace))
 				break;
 			$file = array_key_exists('file', $trace[0]) ? $trace[0]['file'] : 'Unknown Source';
-			$line = array_key_exists('file', $trace[0]) && array_key_exists('line', $trace[0]) && $trace[0]['line'] ? $trace[0]['line'] : null;
+			$line = (array_key_exists('file', $trace[0]) && array_key_exists('line', $trace[0]) && $trace[0]['line']) ? $trace[0]['line'] : null;
 			array_shift($trace);
 		}
 

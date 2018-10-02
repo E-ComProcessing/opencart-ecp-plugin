@@ -17,16 +17,4 @@
  * @license     http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
  */
 
-if (!class_exists('ControllerPaymentEComProcessingDirect')) {
-	require_once DIR_APPLICATION . 'controller/payment/ecomprocessing_direct.php';
-}
-
-/**
- * Front-end controller for the "E-ComProcessing Direct" module (2.3.x and above)
- *
- * @package EComProcessingDirect
- */
-class ControllerExtensionPaymentEComProcessingDirect extends ControllerPaymentEComProcessingDirect
-{
-
-}
+require_once DIR_APPLICATION . 'language/english/payment/ecomprocessing_direct.php';

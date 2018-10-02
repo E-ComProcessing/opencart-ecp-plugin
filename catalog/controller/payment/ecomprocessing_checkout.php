@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (C) 2016 E-ComProcessing™
+ * Copyright (C) 2018 E-ComProcessing Ltd.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -12,18 +12,30 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * @author      E-ComProcessing
- * @copyright   2016 E-ComProcessing™
- * @license     http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
+ * @author	  E-ComProcessing
+ * @copyright   2018 E-ComProcessing Ltd.
+ * @license	 http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
  */
 
+if (!class_exists('ControllerPaymentEComProcessingBase')) {
+	require_once DIR_APPLICATION . "controller/payment/ecomprocessing/base_controller.php";
+}
+
 /**
- * Front-end controller for the "EComProcessing Checkout" module
+ * Front-end controller for the "E-ComProcessing Checkout" module
  *
  * @package EComProcessingCheckout
  */
-class ControllerPaymentEComProcessingCheckout extends Controller
+class ControllerPaymentEComProcessingCheckout extends ControllerPaymentEComProcessingBase
 {
+
+	/**
+	 * Module Name
+	 *
+	 * @var string
+	 */
+	protected $module_name = 'ecomprocessing_checkout';
+
 	/**
 	 * Init
 	 *
@@ -42,22 +54,63 @@ class ControllerPaymentEComProcessingCheckout extends Controller
 	public function index()
 	{
 		$this->load->language('payment/ecomprocessing_checkout');
+		$this->load->model('payment/ecomprocessing_checkout');
 
+		if ($this->model_payment_ecomprocessing_checkout->isCartContentMixed()) {
+			$template = 'ecomprocessing_disabled.tpl';
+			$data = $this->prepareViewDataMixedCart();
+
+		} else {
+			$template = 'ecomprocessing_checkout.tpl';
+
+			$data = $this->prepareViewData();
+		}
+
+		if (file_exists(DIR_TEMPLATE . $this->config->get('config_template') . '/template/payment/' . $template)) {
+			return $this->load->view(
+				$this->config->get('config_template') . '/template/payment/' . $template,
+				$data
+			);
+		} else {
+			return $this->load->view('payment/' . $template, $data);
+		}
+	}
+
+	/**
+	 * Prepares data for the view
+	 *
+	 * @return array
+	 */
+	public function prepareViewData()
+	{
 		$data = array(
-			'text_title'     => $this->language->get('text_title'),
+			'text_title'	 => $this->language->get('text_title'),
 			'text_loading'   => $this->language->get('text_loading'),
 
 			'button_confirm' => $this->language->get('button_confirm'),
 			'button_target'  => $this->url->link('payment/ecomprocessing_checkout/send', '', 'SSL'),
 
-			'scripts'        => $this->document->getScripts()
+			'scripts'		 => $this->document->getScripts()
 		);
 
-		if (file_exists(DIR_TEMPLATE . $this->config->get('config_template') . '/template/payment/ecomprocessing_checkout.tpl')) {
-			return $this->load->view($this->config->get('config_template') . '/template/payment/ecomprocessing_checkout.tpl', $data);
-		} else {
-			return $this->load->view('payment/ecomprocessing_checkout.tpl', $data);
-		}
+		return $data;
+	}
+
+	/**
+	 * Prepares data for the view when cart content is mixed
+	 *
+	 * @return array
+	 */
+	public function prepareViewDataMixedCart()
+	{
+		$data = array(
+			'text_loading'					  => $this->language->get('text_loading'),
+			'text_payment_mixed_cart_content' => $this->language->get('text_payment_mixed_cart_content'),
+			'button_shopping_cart'			  => $this->language->get('button_shopping_cart'),
+			'button_target'					  => $this->url->link('checkout/cart')
+		);
+
+		return $data;
 	}
 
 	/**
@@ -76,69 +129,67 @@ class ControllerPaymentEComProcessingCheckout extends Controller
 			$order_info = $this->model_checkout_order->getOrder($this->session->data['order_id']);
 
 			$data = array(
-				'transaction_id'     => $this->model_payment_ecomprocessing_checkout->genTransactionId(),
+				'transaction_id'	 => $this->model_payment_ecomprocessing_checkout->genTransactionId(),
 
-				'remote_address'     => $this->request->server['REMOTE_ADDR'],
+				'remote_address'	 => $this->request->server['REMOTE_ADDR'],
 
-				'usage'              => $this->model_payment_ecomprocessing_checkout->getUsage(),
-				'description'        => $this->model_payment_ecomprocessing_checkout->getOrderProducts(
+				'usage'			     => $this->model_payment_ecomprocessing_checkout->getUsage(),
+				'description'		 => $this->model_payment_ecomprocessing_checkout->getOrderProducts(
 					$this->session->data['order_id']
 				),
 
-				'language'           => $this->model_payment_ecomprocessing_checkout->getLanguage(),
+				'language'		     => $this->model_payment_ecomprocessing_checkout->getLanguage(),
 
-				'currency'           => $this->getCurrencyCode(),
-				'amount'             => $order_info['total'],
+				'currency'		     => $this->model_payment_ecomprocessing_checkout->getCurrencyCode(),
+				'amount'			 => $order_info['total'],
 
-				'customer_email'     => $order_info['email'],
-				'customer_phone'     => $order_info['telephone'],
+				'customer_email'	 => $order_info['email'],
+				'customer_phone'	 => $order_info['telephone'],
 
 				'notification_url'   => $this->url->link('payment/ecomprocessing_checkout/callback', '', 'SSL'),
 				'return_success_url' => $this->url->link('payment/ecomprocessing_checkout/success', '', 'SSL'),
 				'return_failure_url' => $this->url->link('payment/ecomprocessing_checkout/failure', '', 'SSL'),
 				'return_cancel_url'  => $this->url->link('payment/ecomprocessing_checkout/cancel', '', 'SSL'),
 
-				'billing'            => array(
-					'first_name' => $order_info['payment_firstname'],
-					'last_name'  => $order_info['payment_lastname'],
-					'address1'   => $order_info['payment_address_1'],
-					'address2'   => $order_info['payment_address_2'],
-					'zip'        => $order_info['payment_postcode'],
-					'city'       => $order_info['payment_city'],
-					'state'      => $order_info['payment_zone_code'],
-					'country'    => $order_info['payment_iso_code_2'],
+				'billing'			 => array(
+					'first_name'     => $order_info['payment_firstname'],
+					'last_name'      => $order_info['payment_lastname'],
+					'address1'       => $order_info['payment_address_1'],
+					'address2'       => $order_info['payment_address_2'],
+					'zip'		     => $order_info['payment_postcode'],
+					'city'	         => $order_info['payment_city'],
+					'state'	         => $order_info['payment_zone_code'],
+					'country'	     => $order_info['payment_iso_code_2'],
 				),
 
-				'shipping'           => array(
-					'first_name' => $order_info['shipping_firstname'],
-					'last_name'  => $order_info['shipping_lastname'],
-					'address1'   => $order_info['shipping_address_1'],
-					'address2'   => $order_info['shipping_address_2'],
-					'zip'        => $order_info['shipping_postcode'],
-					'city'       => $order_info['shipping_city'],
-					'state'      => $order_info['shipping_zone_code'],
-					'country'    => $order_info['shipping_iso_code_2'],
+				'shipping'		     => array(
+					'first_name'     => $order_info['shipping_firstname'],
+					'last_name'      => $order_info['shipping_lastname'],
+					'address1'       => $order_info['shipping_address_1'],
+					'address2'       => $order_info['shipping_address_2'],
+					'zip'		     => $order_info['shipping_postcode'],
+					'city'	         => $order_info['shipping_city'],
+					'state'	         => $order_info['shipping_zone_code'],
+					'country'	     => $order_info['shipping_iso_code_2'],
 				)
 			);
 
 			$transaction = $this->model_payment_ecomprocessing_checkout->create($data);
 
 			if (isset($transaction->unique_id)) {
-				$timestamp = ($transaction->timestamp instanceof \DateTime)
-					? $transaction->timestamp->format('c')
-					: $transaction->timestamp;
+				$timestamp = ($transaction->timestamp instanceof \DateTime) ? $transaction->timestamp->format('c') : $transaction->timestamp;
 
 				$data = array(
-					'type'              => 'checkout',
-					'reference_id'      => '0',
-					'order_id'          => $order_info['order_id'],
-					'unique_id'         => $transaction->unique_id,
-					'status'            => $transaction->status,
-					'amount'            => $transaction->amount,
-					'currency'          => $transaction->currency,
-					'message'           => isset($transaction->message) ? $transaction->message : '',
+					'type'			    => 'checkout',
+					'reference_id'	    => '0',
+					'order_id'		    => $order_info['order_id'],
+					'unique_id'		    => $transaction->unique_id,
+					'status'			=> $transaction->status,
+					'amount'			=> $transaction->amount,
+					'currency'		    => $transaction->currency,
+					'message'		    => isset($transaction->message) ? $transaction->message : '',
 					'technical_message' => isset($transaction->technical_message) ? $transaction->technical_message : '',
-					'timestamp'         => $timestamp,
+					'timestamp'		    => $timestamp,
 				);
 
 				$this->model_payment_ecomprocessing_checkout->populateTransaction($data);
@@ -150,6 +201,12 @@ class ControllerPaymentEComProcessingCheckout extends Controller
 					true
 				);
 
+				if ($this->model_payment_ecomprocessing_checkout->isRecurringOrder()) {
+					$this->addOrderRecurring(null); // "checkout" transaction type
+					$this->model_payment_ecomprocessing_checkout->populateRecurringTransaction($data);
+					$this->model_payment_ecomprocessing_checkout->updateOrderRecurring($data);
+				}
+
 				$json = array(
 					'redirect' => $transaction->redirect_url
 				);
@@ -160,9 +217,7 @@ class ControllerPaymentEComProcessingCheckout extends Controller
 			}
 		} catch (\Exception $exception) {
 			$json = array(
-				'error' => ($exception->getMessage())
-					? $exception->getMessage()
-					: $this->language->get('text_payment_system_error')
+				'error' => ($exception->getMessage()) ? $exception->getMessage() : $this->language->get('text_payment_system_error')
 			);
 
 			$this->model_payment_ecomprocessing_checkout->logEx($exception);
@@ -199,15 +254,13 @@ class ControllerPaymentEComProcessingCheckout extends Controller
 
 				$wpf_reconcile = $notification->getReconciliationObject();
 
-				$timestamp = ($wpf_reconcile->timestamp instanceof \DateTime)
-					? $wpf_reconcile->timestamp->format('c')
-					: $wpf_reconcile->timestamp;
+				$timestamp = ($wpf_reconcile->timestamp instanceof \DateTime) ? $wpf_reconcile->timestamp->format('c') : $wpf_reconcile->timestamp;
 
 				$data = array(
 					'unique_id' => $wpf_reconcile->unique_id,
-					'status'    => $wpf_reconcile->status,
+					'status'	=> $wpf_reconcile->status,
 					'currency'  => $wpf_reconcile->currency,
-					'amount'    => $wpf_reconcile->amount,
+					'amount'	=> $wpf_reconcile->amount,
 					'timestamp' => $timestamp,
 				);
 
@@ -217,31 +270,36 @@ class ControllerPaymentEComProcessingCheckout extends Controller
 					$wpf_reconcile->unique_id
 				);
 
+				$reference = null;
+
 				if (isset($transaction['order_id']) && abs((int)$transaction['order_id']) > 0) {
 					if (isset($wpf_reconcile->payment_transaction)) {
 
 						$payment_transaction = $wpf_reconcile->payment_transaction;
 
-						$timestamp = ($payment_transaction->timestamp instanceof \DateTime)
-							? $payment_transaction->timestamp->format('c')
-							: $payment_transaction->timestamp;
+						$timestamp = ($payment_transaction->timestamp instanceof \DateTime) ? $payment_transaction->timestamp->format('c') : $payment_transaction->timestamp;
 
 						$data = array(
-							'order_id'          => $transaction['order_id'],
-							'reference_id'      => $wpf_reconcile->unique_id,
-							'unique_id'         => $payment_transaction->unique_id,
-							'type'              => $payment_transaction->transaction_type,
-							'mode'              => $payment_transaction->mode,
-							'status'            => $payment_transaction->status,
-							'currency'          => $payment_transaction->currency,
-							'amount'            => $payment_transaction->amount,
-							'timestamp'         => $timestamp,
-							'terminal_token'    => isset($payment_transaction->terminal_token) ? $payment_transaction->terminal_token : '',
-							'message'           => isset($payment_transaction->message) ? $payment_transaction->message : '',
+							'order_id'		    => $transaction['order_id'],
+							'reference_id'	    => $wpf_reconcile->unique_id,
+							'unique_id'		    => $payment_transaction->unique_id,
+							'type'			    => $payment_transaction->transaction_type,
+							'mode'			    => $payment_transaction->mode,
+							'status'			=> $payment_transaction->status,
+							'currency'		    => $payment_transaction->currency,
+							'amount'			=> $payment_transaction->amount,
+							'timestamp'		    => $timestamp,
+							'terminal_token'	=> isset($payment_transaction->terminal_token) ? $payment_transaction->terminal_token : '',
+							'message'		    => isset($payment_transaction->message) ? $payment_transaction->message : '',
 							'technical_message' => isset($payment_transaction->technical_message) ? $payment_transaction->technical_message : '',
 						);
 
 						$this->model_payment_ecomprocessing_checkout->populateTransaction($data);
+
+						if ($this->model_payment_ecomprocessing_checkout->isInitialRecurringTransaction($payment_transaction->transaction_type))
+						{
+							$reference = $payment_transaction->unique_id;
+						}
 					}
 
 					switch ($wpf_reconcile->status) {
@@ -263,6 +321,11 @@ class ControllerPaymentEComProcessingCheckout extends Controller
 							);
 							break;
 					}
+				}
+
+				if ($this->model_payment_ecomprocessing_checkout->isRecurringOrder()) {
+					$this->model_payment_ecomprocessing_checkout->populateRecurringTransaction($data);
+					$this->model_payment_ecomprocessing_checkout->updateOrderRecurring($data, $reference);
 				}
 
 				$this->response->addHeader('Content-Type: text/xml');
@@ -319,18 +382,37 @@ class ControllerPaymentEComProcessingCheckout extends Controller
 	 */
 	protected function isUserLoggedIn()
 	{
-		$isCallback = strpos((string)$this->request->get['route'], 'callback') !== false;
+		$is_callback = strpos((string)$this->request->get['route'], 'callback') !== false;
 
-		if (!$this->customer->isLogged() && !$isCallback) {
+		if (!$this->customer->isLogged() && !$is_callback) {
 			$this->response->redirect($this->url->link('account/login', '', 'SSL'));
 		}
 	}
 
 	/**
-	 * Get current Currency Code
-	 * @return string
+	 * Adds recurring order
+	 * @param string $payment_reference
 	 */
-	protected function getCurrencyCode() {
-		return $this->session->data['currency'];
+	public function addOrderRecurring($payment_reference)
+	{
+		$recurring_products = $this->cart->getRecurringProducts();
+		if (!empty($recurring_products)) {
+			$this->load->model('payment/ecomprocessing_checkout');
+			$this->model_payment_ecomprocessing_checkout->addOrderRecurring(
+				$recurring_products,
+				$payment_reference
+			);
+		}
+	}
+
+	/**
+	 * Process the cron if the request is local
+	 *
+	 * @return void
+	 */
+	public function cron()
+	{
+		$this->load->model('payment/ecomprocessing_checkout');
+		$this->model_payment_ecomprocessing_checkout->processRecurringOrders();
 	}
 }

@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (C) 2016 E-ComProcessing™
+ * Copyright (C) 2018 E-ComProcessing Ltd.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -13,17 +13,26 @@
  * GNU General Public License for more details.
  *
  * @author      E-ComProcessing
- * @copyright   2016 E-ComProcessing™
+ * @copyright   2018 E-ComProcessing Ltd.
  * @license     http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
  */
+
+require_once DIR_APPLICATION . 'model/payment/ecomprocessing/base_model.php';
 
 /**
  * Front-end model for the "E-ComProcessing Checkout" module
  *
  * @package EComProcessingCheckout
  */
-class ModelPaymentEComProcessingCheckout extends Model
+class ModelPaymentEComProcessingCheckout extends ModelPaymentEComProcessingBase
 {
+	/**
+	 * Module Name
+	 *
+	 * @var string
+	 */
+	protected $module_name = 'ecomprocessing_checkout';
+
 	/**
 	 * Main method
 	 *
@@ -91,8 +100,8 @@ class ModelPaymentEComProcessingCheckout extends Model
 	{
 		try {
 			$fields = implode(', ', array_map(
-					function ($v, $k) {
-						return sprintf('`%s`', $k);
+					function ($value, $key) {
+						return sprintf('`%s`', $key);
 					},
 					$data,
 					array_keys($data)
@@ -100,8 +109,8 @@ class ModelPaymentEComProcessingCheckout extends Model
 			);
 
 			$values = implode(', ', array_map(
-					function ($v) {
-						return sprintf("'%s'", $v);
+					function ($value) {
+						return sprintf("'%s'", $value);
 					},
 					$data,
 					array_keys($data)
@@ -109,11 +118,11 @@ class ModelPaymentEComProcessingCheckout extends Model
 			);
 
 			$this->db->query("
-                INSERT INTO
-                    `" . DB_PREFIX . "ecomprocessing_checkout_transactions` (" . $fields . ")
-                VALUES
-                    (" . $values . ")
-            ");
+				INSERT INTO
+					`" . DB_PREFIX . "ecomprocessing_checkout_transactions` (" . $fields . ")
+				VALUES
+					(" . $values . ")
+			");
 		} catch (Exception $exception) {
 			$this->logEx($exception);
 		}
@@ -128,8 +137,8 @@ class ModelPaymentEComProcessingCheckout extends Model
 	{
 		try {
 			$fields = implode(', ', array_map(
-					function ($v, $k) {
-						return sprintf("`%s` = '%s'", $k, $v);
+					function ($value, $key) {
+						return sprintf("`%s` = '%s'", $key, $value);
 					},
 					$data,
 					array_keys($data)
@@ -137,13 +146,13 @@ class ModelPaymentEComProcessingCheckout extends Model
 			);
 
 			$this->db->query("
-                UPDATE
-                    `" . DB_PREFIX . "ecomprocessing_checkout_transactions`
-                SET
-                    " . $fields . "
-                WHERE
-                    `unique_id` = '" . $data['unique_id'] . "'
-            ");
+				UPDATE
+					`" . DB_PREFIX . "ecomprocessing_checkout_transactions`
+				SET
+					" . $fields . "
+				WHERE
+				    `unique_id` = '" . $data['unique_id'] . "'
+			");
 		} catch (Exception $exception) {
 			$this->logEx($exception);
 		}
@@ -167,16 +176,16 @@ class ModelPaymentEComProcessingCheckout extends Model
 			});
 
 			// Check if transaction exists
-			$insertQuery = $this->db->query("
-                SELECT
-                    *
-                FROM
-                    `" . DB_PREFIX . "ecomprocessing_checkout_transactions`
-                WHERE
-                    `unique_id` = '" . $data['unique_id'] . "'
-            ");
+			$insert_query = $this->db->query("
+				SELECT
+					*
+				FROM
+					`" . DB_PREFIX . "ecomprocessing_checkout_transactions`
+				WHERE
+					`unique_id` = '" . $data['unique_id'] . "'
+			");
 
-			if ($insertQuery->rows) {
+			if ($insert_query->rows) {
 				$this->updateTransaction($data);
 			} else {
 				$this->addTransaction($data);
@@ -238,7 +247,9 @@ class ModelPaymentEComProcessingCheckout extends Model
 				->setShippingCountry($data['shipping']['country'])
 				->setLanguage($data['language']);
 
-			foreach ($this->getTransactionTypes() as $type) {
+			$transaction_types = $this->isRecurringOrder() ? $this->getRecurringTransactionTypes() : $this->getTransactionTypes();
+
+			foreach ($transaction_types as $type) {
 				if (is_array($type)) {
 					$genesis
 						->request()
@@ -315,9 +326,7 @@ class ModelPaymentEComProcessingCheckout extends Model
 			);
 
 			\Genesis\Config::setEnvironment(
-				$this->config->get('ecomprocessing_checkout_sandbox')
-					? \Genesis\API\Constants\Environments::STAGING
-					: \Genesis\API\Constants\Environments::PRODUCTION
+				$this->config->get('ecomprocessing_checkout_sandbox') ? \Genesis\API\Constants\Environments::STAGING : \Genesis\API\Constants\Environments::PRODUCTION
 			);
 		}
 	}
@@ -344,17 +353,15 @@ class ModelPaymentEComProcessingCheckout extends Model
 	 */
 	public function getLanguage()
 	{
-		$language = isset($this->session->data['language'])
-			? $this->session->data['language']
-			: $this->config->get('config_language');
+		$language = isset($this->session->data['language']) ? $this->session->data['language'] : $this->config->get('config_language');
 
 		$language_code = substr($language, 0, 2);
 
 		$this->bootstrap();
 
-		$isAvailable = @constant('\Genesis\API\Constants\i18n::' . strtoupper($language_code));
+		$is_available = @constant('\Genesis\API\Constants\i18n::' . strtoupper($language_code));
 
-		if ($isAvailable) {
+		if ($is_available) {
 			return strtolower($language_code);
 		} else {
 			return 'en';
@@ -434,6 +441,16 @@ class ModelPaymentEComProcessingCheckout extends Model
 	}
 
 	/**
+	 * Get the selected transaction types in array
+	 *
+	 * @return array
+	 */
+	public function getRecurringTransactionTypes()
+	{
+		return $this->config->get('EComProcessing_checkout_recurring_transaction_type');
+	}
+
+	/**
 	 * Get a Usage string with the Store Name
 	 *
 	 * @return string
@@ -451,32 +468,34 @@ class ModelPaymentEComProcessingCheckout extends Model
 	public function logEx($exception)
 	{
 		if ($this->config->get('ecomprocessing_checkout_debug')) {
-			$log = new Log('ecomprocessing_checkout.log');
+			$log = new Log('EComProcessing_checkout.log');
 			$log->write($this->jTraceEx($exception));
 		}
 	}
 
 	/**
 	 * jTraceEx() - provide a Java style exception trace
-	 * @param $e Exception
+	 * @param $exception Exception
 	 * @param $seen - array passed to recursive calls to accumulate trace lines already seen
 	 *                     leave as NULL when calling this function
 	 * @return array of strings, one entry per trace line
+	 *
+	 * @SuppressWarnings(PHPMD)
 	 */
-	private function jTraceEx($e, $seen = null)
+	private function jTraceEx($exception, $seen = null)
 	{
-		$starter = $seen ? 'Caused by: ' : '';
+		$starter = ($seen) ? 'Caused by: ' : '';
 		$result  = array();
 
 		if (!$seen) $seen = array();
 
-		$trace = $e->getTrace();
-		$prev  = $e->getPrevious();
+		$trace = $exception->getTrace();
+		$prev  = $exception->getPrevious();
 
-		$result[] = sprintf('%s%s: %s', $starter, get_class($e), $e->getMessage());
+		$result[] = sprintf('%s%s: %s', $starter, get_class($exception), $exception->getMessage());
 
-		$file = $e->getFile();
-		$line = $e->getLine();
+		$file = $exception->getFile();
+		$line = $exception->getLine();
 
 		while (true) {
 			$current = "$file:$line";
@@ -488,15 +507,15 @@ class ModelPaymentEComProcessingCheckout extends Model
 				count($trace) && array_key_exists('class', $trace[0]) ? str_replace('\\', '.', $trace[0]['class']) : '',
 				count($trace) && array_key_exists('class', $trace[0]) && array_key_exists('function', $trace[0]) ? '.' : '',
 				count($trace) && array_key_exists('function', $trace[0]) ? str_replace('\\', '.', $trace[0]['function']) : '(main)',
-				$line === null ? $file : basename($file),
-				$line === null ? '' : ':',
-				$line === null ? '' : $line);
+				($line === null) ? $file : basename($file),
+				($line === null) ? '' : ':',
+				($line === null) ? '' : $line);
 			if (is_array($seen))
 				$seen[] = "$file:$line";
 			if (!count($trace))
 				break;
 			$file = array_key_exists('file', $trace[0]) ? $trace[0]['file'] : 'Unknown Source';
-			$line = array_key_exists('file', $trace[0]) && array_key_exists('line', $trace[0]) && $trace[0]['line'] ? $trace[0]['line'] : null;
+			$line = (array_key_exists('file', $trace[0]) && array_key_exists('line', $trace[0]) && $trace[0]['line']) ? $trace[0]['line'] : null;
 			array_shift($trace);
 		}
 

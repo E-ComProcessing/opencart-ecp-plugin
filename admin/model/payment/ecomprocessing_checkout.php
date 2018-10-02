@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (C) 2016 E-ComProcessing™
+ * Copyright (C) 2018 E-ComProcessing Ltd.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -13,7 +13,7 @@
  * GNU General Public License for more details.
  *
  * @author      E-ComProcessing
- * @copyright   2016 E-ComProcessing™
+ * @copyright   2018 E-ComProcessing Ltd.
  * @license     http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
  */
 
@@ -25,18 +25,18 @@
 class ModelPaymentEComProcessingCheckout extends Model
 {
 	/**
-     * Holds the current module version
-     * Will be displayed on Admin Settings Form
-     *
-     * @var string
-     */
-    protected $module_version = "1.3.0";
+	 * Holds the current module version
+	 * Will be displayed on Admin Settings Form
+	 *
+	 * @var string
+	 */
+	protected $module_version = "1.4.2";
 
-    /**
-     * Perform installation logic
-     *
-     * @return void
-     */
+	/**
+	 * Perform installation logic
+	 *
+	 * @return void
+	 */
 	public function install()
 	{
 		$this->db->query("
@@ -54,6 +54,25 @@ class ModelPaymentEComProcessingCheckout extends Model
 			  `amount` DECIMAL( 10, 2 ) DEFAULT NULL,
 			  `currency` CHAR(3) NULL,
 			  PRIMARY KEY (`unique_id`)
+			) ENGINE=MyISAM DEFAULT COLLATE=utf8_general_ci;
+		");
+		$this->db->query("
+			CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "ecomprocessing_checkout_cronlog` (
+			  `log_entry_id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+			  `pid` INT(10) UNSIGNED NOT NULL,
+			  `start_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			  `run_time` VARCHAR(10) DEFAULT NULL,
+			  PRIMARY KEY (`log_entry_id`)
+			) ENGINE=MyISAM DEFAULT COLLATE=utf8_general_ci;
+		");
+		$this->db->query("
+			CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "ecomprocessing_checkout_cronlog_transactions` (
+			  `order_recurring_transaction_id` int(11) NOT NULL,
+			  `order_id` INT(11) NOT NULL,
+			  `log_entry_id` INT(10) UNSIGNED NOT NULL,
+			  PRIMARY KEY (`order_recurring_transaction_id`),
+			  KEY `order_id` (`order_id`),
+			  KEY `log_entry_id` (`log_entry_id`)
 			) ENGINE=MyISAM DEFAULT COLLATE=utf8_general_ci;
 		");
 	}
@@ -101,14 +120,14 @@ class ModelPaymentEComProcessingCheckout extends Model
 	 */
 	public function getTransactionsSumAmount($order_id, $reference_id, $types, $status) {
 		$transactions = $this->getTransactionsByTypeAndStatus($order_id, $reference_id, $types, $status);
-		$totalAmount = 0;
+		$total_amount = 0;
 
 		/** @var $transaction */
 		foreach ($transactions as $transaction) {
-			$totalAmount +=  $transaction['amount'];
+			$total_amount +=  $transaction['amount'];
 		}
 
-		return $totalAmount;
+		return $total_amount;
 	}
 
 	/**
@@ -165,8 +184,8 @@ class ModelPaymentEComProcessingCheckout extends Model
 	{
 		try {
 			$fields = implode(', ', array_map(
-					function ($v, $k) {
-						return sprintf('`%s`', $k);
+					function ($value, $key) {
+						return sprintf('`%s`', $key);
 					},
 					$data,
 					array_keys($data)
@@ -174,8 +193,8 @@ class ModelPaymentEComProcessingCheckout extends Model
 			);
 
 			$values = implode(', ', array_map(
-					function ($v) {
-						return sprintf("'%s'", $v);
+					function ($value) {
+						return sprintf("'%s'", $value);
 					},
 					$data,
 					array_keys($data)
@@ -202,8 +221,8 @@ class ModelPaymentEComProcessingCheckout extends Model
 	{
 		try {
 			$fields = implode(', ', array_map(
-					function ($v, $k) {
-						return sprintf("`%s` = '%s'", $k, $v);
+					function ($value, $key) {
+						return sprintf("`%s` = '%s'", $key, $value);
 					},
 					$data,
 					array_keys($data)
@@ -241,7 +260,7 @@ class ModelPaymentEComProcessingCheckout extends Model
 			});
 
 			// Check if transaction exists
-			$insertQuery = $this->db->query("
+			$insert_query = $this->db->query("
                 SELECT
                     *
                 FROM
@@ -250,7 +269,7 @@ class ModelPaymentEComProcessingCheckout extends Model
                     `unique_id` = '" . $data['unique_id'] . "'
             ");
 
-			if ($insertQuery->rows) {
+			if ($insert_query->rows) {
 				$this->updateTransaction($data);
 			} else {
 				$this->addTransaction($data);
@@ -475,6 +494,29 @@ class ModelPaymentEComProcessingCheckout extends Model
 	}
 
 	/**
+	 * Get localized recurring transaction types for Genesis
+	 *
+	 * @return array
+	 */
+	public function getRecurringTransactionTypes()
+	{
+		$this->bootstrap();
+
+		$this->load->language('payment/ecomprocessing_checkout');
+
+		return array(
+			\Genesis\API\Constants\Transaction\Types::INIT_RECURRING_SALE    => array(
+				'id'   => \Genesis\API\Constants\Transaction\Types::INIT_RECURRING_SALE,
+				'name' => $this->language->get('text_transaction_init_recurring')
+			),
+			\Genesis\API\Constants\Transaction\Types::INIT_RECURRING_SALE_3D => array(
+				'id'   => \Genesis\API\Constants\Transaction\Types::INIT_RECURRING_SALE_3D,
+				'name' => $this->language->get('text_transaction_init_recurring_3d')
+			),
+		);
+	}
+
+	/**
 	 * Generate Transaction Id based on the order id
 	 * and salted to avoid duplication
 	 *
@@ -514,9 +556,7 @@ class ModelPaymentEComProcessingCheckout extends Model
 			);
 
 			\Genesis\Config::setEnvironment(
-				$this->config->get('ecomprocessing_checkout_sandbox')
-					? \Genesis\API\Constants\Environments::STAGING
-					: \Genesis\API\Constants\Environments::PRODUCTION
+				$this->config->get('ecomprocessing_checkout_sandbox') ? \Genesis\API\Constants\Environments::STAGING : \Genesis\API\Constants\Environments::PRODUCTION
 			);
 		}
 
@@ -533,32 +573,32 @@ class ModelPaymentEComProcessingCheckout extends Model
 	public function logEx($exception)
 	{
 		if ($this->config->get('ecomprocessing_checkout_debug')) {
-			$log = new Log('ecomprocessing_checkout.log');
+			$log = new Log('EComProcessing_checkout.log');
 			$log->write($this->jTraceEx($exception));
 		}
 	}
 
 	/**
 	 * jTraceEx() - provide a Java style exception trace
-	 * @param $e Exception
+	 * @param $exception Exception
 	 * @param $seen - array passed to recursive calls to accumulate trace lines already seen
 	 *                     leave as NULL when calling this function
 	 * @return array of strings, one entry per trace line
 	 */
-	private function jTraceEx($e, $seen = null)
+	private function jTraceEx($exception, $seen = null)
 	{
-		$starter = $seen ? 'Caused by: ' : '';
+		$starter = ($seen) ? 'Caused by: ' : '';
 		$result  = array();
 
 		if (!$seen) $seen = array();
 
-		$trace = $e->getTrace();
-		$prev  = $e->getPrevious();
+		$trace = $exception->getTrace();
+		$prev  = $exception->getPrevious();
 
-		$result[] = sprintf('%s%s: %s', $starter, get_class($e), $e->getMessage());
+		$result[] = sprintf('%s%s: %s', $starter, get_class($exception), $exception->getMessage());
 
-		$file = $e->getFile();
-		$line = $e->getLine();
+		$file = $exception->getFile();
+		$line = $exception->getLine();
 
 		while (true) {
 			$current = "$file:$line";
@@ -570,15 +610,15 @@ class ModelPaymentEComProcessingCheckout extends Model
 				count($trace) && array_key_exists('class', $trace[0]) ? str_replace('\\', '.', $trace[0]['class']) : '',
 				count($trace) && array_key_exists('class', $trace[0]) && array_key_exists('function', $trace[0]) ? '.' : '',
 				count($trace) && array_key_exists('function', $trace[0]) ? str_replace('\\', '.', $trace[0]['function']) : '(main)',
-				$line === null ? $file : basename($file),
-				$line === null ? '' : ':',
-				$line === null ? '' : $line);
+				($line === null) ? $file : basename($file),
+				($line === null) ? '' : ':',
+				($line === null) ? '' : $line);
 			if (is_array($seen))
 				$seen[] = "$file:$line";
 			if (!count($trace))
 				break;
 			$file = array_key_exists('file', $trace[0]) ? $trace[0]['file'] : 'Unknown Source';
-			$line = array_key_exists('file', $trace[0]) && array_key_exists('line', $trace[0]) && $trace[0]['line'] ? $trace[0]['line'] : null;
+			$line = (array_key_exists('file', $trace[0]) && array_key_exists('line', $trace[0]) && $trace[0]['line']) ? $trace[0]['line'] : null;
 			array_shift($trace);
 		}
 
@@ -590,13 +630,13 @@ class ModelPaymentEComProcessingCheckout extends Model
 		return $result;
 	}
 
-    /**
-     * Retrieves the Module Method Version
-     *
-     * @return string
-     */
-    public function getVersion()
-    {
-        return $this->module_version;
-    }
+	/**
+	 * Retrieves the Module Method Version
+	 *
+	 * @return string
+	 */
+	public function getVersion()
+	{
+		return $this->module_version;
+	}
 }
