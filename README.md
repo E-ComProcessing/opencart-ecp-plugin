@@ -1,14 +1,14 @@
-E-ComProcessing Gateway Module for OpenCart
+E-Comprocessing Gateway Module for OpenCart
 ========================================
 
-This is a Payment Module for OpenCart, that gives you the ability to process payments through E-ComProcessing's Payment Gateway - Genesis.
+This is a Payment Module for OpenCart, that gives you the ability to process payments through E-Comprocessing's Payment Gateway - Genesis.
 
 Requirements
 ------------
 
 * OpenCart 2.0.X - 3.0.2.X (due to architectural changes, this module is __incompatible__ with OpenCart 1.X)
 * [GenesisPHP v1.4](https://github.com/GenesisGateway/genesis_php) - (Integrated in Module)
-* PCI-certified server in order to use ```E-ComProcessing Direct```
+* PCI-certified server in order to use ```E-Comprocessing Direct```
 
 GenesisPHP Requirements
 ------------
@@ -24,13 +24,13 @@ GenesisPHP Requirements
 
 Installation (via Extension Installer - up to 3.x)
 ------------
-1.	Download the __E-ComProcessing Payment Gateway__, extract the contents of the folder (excluding ```README.md```) into another empty folder ```upload``` on your local computer.
+1.	Download the __E-Comprocessing Payment Gateway__, extract the contents of the folder (excluding ```README.md```) into another empty folder ```upload``` on your local computer.
 - For version 2.0.x exclude folder ```admin/controller/extension/payment```
 2.	Create a compressed ```zip``` file of the folder ```upload``` with name ```ecomprocessing.ocmod.zip```
 3.  Login inside the __OpenCart Admin Panel__
-4.  Navigate to ```Extensions -> Extension Installer``` and click on button ```Upload``` and choose the ```zip``` file ```ecomprocessing.ocmod.zip``` to install the __E-ComProcessing Payment Gateway__.
+4.  Navigate to ```Extensions -> Extension Installer``` and click on button ```Upload``` and choose the ```zip``` file ```ecomprocessing.ocmod.zip``` to install the __E-Comprocessing Payment Gateway__.
 5.	If you receive an error message __FTP needs to be enabled in the settings__, go to ```System -> Settings -> Your Store -> Edit -> FTP``` and configure your FTP account settings and repeat __Step 4__.
-5.  Navigate to ```Extensions -> Payments``` and click install on ```E-ComProcessing Direct``` and/or ```E-ComProcessing Checkout```
+5.  Navigate to ```Extensions -> Payments``` and click install on ```E-Comprocessing Direct``` and/or ```E-Comprocessing Checkout```
 6.  Set the login credentials (```Username```, ```Password```, ```Token```) and adjust the configuration to your needs.
 
 Installation (Manual)
@@ -39,12 +39,12 @@ Installation (Manual)
 1.  Upload the contents of the folder (excluding ```README.md```) to the ```<root>``` folder of your OpenCart installation
 - For version 2.0.x you will have to delete folder ```admin\controller\extension\payment```
 2.  Login inside the __OpenCart Admin Panel__
-3.  Navigate to ```Extensions -> Payments``` and click install on ```E-ComProcessing Direct``` and/or ```E-ComProcessing Checkout```
+3.  Navigate to ```Extensions -> Payments``` and click install on ```E-Comprocessing Direct``` and/or ```E-Comprocessing Checkout```
 4.  Set the login credentials (```Username```, ```Password```, ```Token```) and adjust the configuration to your needs.
 
 Enable OpenCart SSL
 ------------
-This steps should be followed if you wish to use the ```E-ComProcessing Direct``` Method.
+This steps should be followed if you wish to use the ```E-Comprocessing Direct``` Method.
 
 * Ensure you have installed a valid __SSL Certificate__ on your __PCI-DSS Certified__ Web Server and you have configured your __Virtual Host__ properly.
 * Login to your OpenCart Admin Panel

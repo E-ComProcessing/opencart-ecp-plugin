@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (C) 2018 E-ComProcessing Ltd.
+ * Copyright (C) 2018 E-Comprocessing Ltd.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -12,8 +12,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * @author      E-ComProcessing
- * @copyright   2018 E-ComProcessing Ltd.
+ * @author      E-Comprocessing
+ * @copyright   2018 E-Comprocessing Ltd.
  * @license     http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
  */
 
@@ -22,7 +22,7 @@ if (!class_exists('ControllerPaymentEComProcessingBase')) {
 }
 
 /**
- * Backend controller for the "E-ComProcessing Direct" module
+ * Backend controller for the "E-Comprocessing Direct" module
  *
  * @package EComProcessingDirect
  */

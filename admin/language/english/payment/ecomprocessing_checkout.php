@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (C) 2018 E-ComProcessing Ltd.
+ * Copyright (C) 2018 E-Comprocessing Ltd.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -12,13 +12,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * @author      E-ComProcessing
- * @copyright   2018 E-ComProcessing Ltd.
+ * @author      E-Comprocessing
+ * @copyright   2018 E-Comprocessing Ltd.
  * @license     http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
  */
 
 // Heading
-$_['heading_title'] = 'E-ComProcessing Checkout';
+$_['heading_title'] = 'E-Comprocessing Checkout';
 
 // Tabs
 $_['tab_general']   = 'General settings';
@@ -26,9 +26,9 @@ $_['tab_recurring'] = 'Recurring payments';
 
 // Text
 $_['text_payment']  			 = 'Payment';
-$_['text_success']  			 = 'Success: You have modified your E-ComProcessing configuration!';
-$_['text_failed']   			 = 'Failed: An error has occured saving your E-ComProcessing configuration!';
-$_['text_edit']     			 = 'Edit E-ComProcessing Checkout';
+$_['text_success']  			 = 'Success: You have modified your E-Comprocessing configuration!';
+$_['text_failed']   			 = 'Failed: An error has occured saving your E-Comprocessing configuration!';
+$_['text_edit']     			 = 'Edit E-Comprocessing Checkout';
 $_['text_yes']      			 = 'Yes';
 $_['text_no']       			 = 'No';
 $_['text_ecomprocessing_checkout'] = <<<HTML
@@ -87,7 +87,7 @@ $_['text_transaction_trust_pay']           = 'TrustPay';
 $_['text_transaction_webmoney']            = 'WebMoney';
 
 // Transaction View
-$_['text_payment_info']          = 'E-ComProcessing transactions';
+$_['text_payment_info']          = 'E-Comprocessing transactions';
 $_['text_transaction_id']        = 'Transaction ID';
 $_['text_transaction_timestamp'] = 'Date/Time';
 $_['text_transaction_amount']    = 'Amount';
@@ -161,7 +161,7 @@ $_['help_cron_allowed_ip']                           = 'The IP address allowed t
 $_['help_cron_last_execution']                       = 'The time the cron / schtasks was last executed.';
 
 // Error
-$_['error_permission']           = 'Warning: You do not have permission to modify payment module E-ComProcessing!';
+$_['error_permission']           = 'Warning: You do not have permission to modify payment module E-Comprocessing!';
 $_['error_username']             = 'Genesis Username is Required!';
 $_['error_password']             = 'Genesis Password is Required!';
 $_['error_transaction_type']     = 'You have to select at least one transaction type!';
