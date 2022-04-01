@@ -12,18 +12,36 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * @author      E-Comprocessing
+ * @author	  E-Comprocessing
  * @copyright   2018 E-Comprocessing Ltd.
- * @license     http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
+ * @license	 http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
  */
-if (!class_exists('ControllerPaymentEComProcessingCheckout')) {
-	require_once DIR_APPLICATION . 'controller/payment/ecomprocessing_checkout.php';
+
+if (!class_exists('ControllerExtensionPaymentEComprocessingBase')) {
+	require_once DIR_APPLICATION . "controller/extension/payment/ecomprocessing/base_controller.php";
 }
+
 /**
- * Back-end controller for the "E-Comprocessing Checkout" module (3.0.x and above)
+ * Backend controller for the "E-Comprocessing Checkout" module
  *
- * @package EComProcessingCheckout
+ * @package EComprocessingCheckout
  */
-class ControllerExtensionPaymentEComProcessingCheckout extends ControllerPaymentEComProcessingCheckout
+class ControllerExtensionPaymentEComprocessingCheckout extends ControllerExtensionPaymentEComprocessingBase
 {
+	/**
+	 * Module Name (Used in View - Templates)
+	 *
+	 * @var string
+	 */
+	protected $module_name = 'ecomprocessing_checkout';
+
+	/**
+	 * Used to find out if the payment method requires SSL
+	 *
+	 * @return bool
+	 */
+	protected function isModuleRequiresSsl()
+	{
+		return false;
+	}
 }

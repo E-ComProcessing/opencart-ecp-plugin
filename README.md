@@ -6,8 +6,8 @@ This is a Payment Module for OpenCart, that gives you the ability to process pay
 Requirements
 ------------
 
-* OpenCart 2.0.X - 3.0.2.X (due to architectural changes, this module is __incompatible__ with OpenCart 1.X)
-* [GenesisPHP v1.4](https://github.com/GenesisGateway/genesis_php) - (Integrated in Module)
+* OpenCart 3.0.X - 3.0.3.X (due to architectural changes, this module is __incompatible__ with OpenCart 1.X and 2.0.X)
+* [GenesisPHP v1.20.0](https://github.com/GenesisGateway/genesis_php/tree/1.20.0) - (Integrated in Module)
 * PCI-certified server in order to use ```E-Comprocessing Direct```
 
 GenesisPHP Requirements
@@ -22,22 +22,19 @@ GenesisPHP Requirements
     * [XMLReader](https://php.net/xmlreader)
     * [XMLWriter](https://php.net/xmlwriter)
 
-Installation (via Extension Installer - up to 3.x)
+Installation via Extension Installer
 ------------
-1.	Download the __E-Comprocessing Payment Gateway__, extract the contents of the folder (excluding ```README.md```) into another empty folder ```upload``` on your local computer.
-- For version 2.0.x exclude folder ```admin/controller/extension/payment```
-2.	Create a compressed ```zip``` file of the folder ```upload``` with name ```ecomprocessing.ocmod.zip```
-3.  Login inside the __OpenCart Admin Panel__
-4.  Navigate to ```Extensions -> Extension Installer``` and click on button ```Upload``` and choose the ```zip``` file ```ecomprocessing.ocmod.zip``` to install the __E-Comprocessing Payment Gateway__.
-5.	If you receive an error message __FTP needs to be enabled in the settings__, go to ```System -> Settings -> Your Store -> Edit -> FTP``` and configure your FTP account settings and repeat __Step 4__.
-5.  Navigate to ```Extensions -> Payments``` and click install on ```E-Comprocessing Direct``` and/or ```E-Comprocessing Checkout```
-6.  Set the login credentials (```Username```, ```Password```, ```Token```) and adjust the configuration to your needs.
+1.	Download the __E-Comprocessing Payment Gateway__, extract the contents of the folder
+2.	Create a compressed ```zip``` file of the folder ```upload``` with name ```ecomprocessing.ocmod.zip``` (excluding ```README.md```)
+3.	Login inside the __OpenCart Admin Panel__
+4.	Navigate to ```Extensions -> Installer``` and click on button ```Upload``` and choose the ```zip``` file ```ecomprocessing.ocmod.zip```
+5.	Navigate to ```Extensions -> Payments``` and click install on ```E-Comprocessing Direct``` and/or ```E-Comprocessing Checkout```
+6.	Set the login credentials (```Username```, ```Password```, ```Token```) and adjust the configuration to your needs.
 
 Installation (Manual)
 ------------
 
-1.  Upload the contents of the folder (excluding ```README.md```) to the ```<root>``` folder of your OpenCart installation
-- For version 2.0.x you will have to delete folder ```admin\controller\extension\payment```
+1.  Upload the contents of the folder ```upload``` (excluding ```README.md```) to the ```<root>``` folder of your OpenCart installation
 2.  Login inside the __OpenCart Admin Panel__
 3.  Navigate to ```Extensions -> Payments``` and click install on ```E-Comprocessing Direct``` and/or ```E-Comprocessing Checkout```
 4.  Set the login credentials (```Username```, ```Password```, ```Token```) and adjust the configuration to your needs.
@@ -70,6 +67,89 @@ If you are interested in, you could read more about:
 * Handling Recurring Payments with Payment Module
 
 in [wiki for Recurring Payments](https://github.com/E-ComProcessing/opencart-ecp-plugin/wiki/OpenCart-Recurring-Module-Configurations)
+
+Supported Transactions & Payment Methods
+---------------------
+* ```E-Comprocessing Direct``` Payment Method
+  * __Authorize__
+  * __Authorize (3D-Secure)__
+  * __Sale__
+  * __Sale (3D-Secure)__
+
+* ```E-Comprocessing Checkout``` Payment Method
+  * __Argencard__
+  * __Aura__
+  * __Authorize__
+  * __Authorize (3D-Secure)__
+  * __Baloto__
+  * __Bancomer__
+  * __Bancontact__
+  * __Banco de Occidente__
+  * __Banco do Brasil__
+  * __BitPay__
+  * __Boleto__
+  * __Bradesco__
+  * __Cabal__
+  * __CashU__
+  * __Cencosud__
+  * __Davivienda__
+  * __Efecty__
+  * __Elo__
+  * __eps__
+  * __eZeeWallet__
+  * __Fashioncheque__
+  * __GiroPay__
+  * __GooglePay__
+  * __iDeal__
+  * __iDebit__
+  * __InstaDebit__
+  * __InstantTransfer__
+  * __InitRecurringSale__
+  * __InitRecurringSale (3D-Secure)__
+  * __Intersolve__
+  * __Itau__
+  * __Klarna__
+  * __Multibanco__
+  * __MyBank__
+  * __Naranja__
+  * __Nativa__
+  * __Neosurf__
+  * __Neteller__
+  * __Online Banking__
+  * __OXXO__
+  * __P24__
+  * __Pago Facil__
+  * __PayPal__
+  * __PaySafeCard__
+  * __PayU__
+  * __POLi__
+  * __Post Finance__
+  * __PPRO__
+    * __eps__
+    * __GiroPay__
+    * __Ideal__
+    * __Przelewy24__
+    * __SafetyPay__
+    * __TrustPay__
+    * __BCMC__
+    * __MyBank__
+  * __PSE__
+  * __RapiPago__
+  * __Redpagos__
+  * __SafetyPay__
+  * __Sale__
+  * __Sale (3D-Secure)__
+  * __Santander__
+  * __Sepa Direct Debit__
+  * __SOFORT__
+  * __Tarjeta Shopping__
+  * __TCS__
+  * __Trustly__
+  * __TrustPay__
+  * __UPI__
+  * __WebMoney__
+  * __WebPay__
+  * __WeChat__
 
 _Note_: If you have trouble with your credentials or terminal configuration, get in touch with our [support] team
 
