@@ -20,9 +20,9 @@
 /**
  * Base Abstract Class for Method Front Controllers
  *
- * Class ControllerExtensionPaymentEComprocessingBase
+ * Class ControllerExtensionPaymentEcomprocessingBase
  */
-abstract class ControllerExtensionPaymentEComprocessingBase extends Controller
+abstract class ControllerExtensionPaymentEcomprocessingBase extends Controller
 {
 
 

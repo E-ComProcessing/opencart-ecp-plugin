@@ -17,16 +17,16 @@
  * @license     http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
  */
 
-if (!class_exists('ControllerExtensionPaymentEComprocessingBase')) {
+if (!class_exists('ControllerExtensionPaymentEcomprocessingBase')) {
 	require_once DIR_APPLICATION . "controller/extension/payment/ecomprocessing/base_controller.php";
 }
 
 /**
  * Backend controller for the "E-Comprocessing Direct" module
  *
- * @package EComprocessingDirect
+ * @package EcomprocessingDirect
  */
-class ControllerExtensionPaymentEComprocessingDirect extends ControllerExtensionPaymentEComprocessingBase
+class ControllerExtensionPaymentEcomprocessingDirect extends ControllerExtensionPaymentEcomprocessingBase
 {
 	/**
 	 * Module Name (Used in View - Templates)
@@ -46,7 +46,7 @@ class ControllerExtensionPaymentEComprocessingDirect extends ControllerExtension
 	}
 
 	/**
-	 * ControllerExtensionPaymentEComprocessingDirect constructor.
+	 * ControllerExtensionPaymentEcomprocessingDirect constructor.
 	 * @param $registry
 	 */
 	public function __construct($registry)

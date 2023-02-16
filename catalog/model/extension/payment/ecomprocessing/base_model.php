@@ -21,16 +21,16 @@ if (!class_exists('\Genesis\Genesis', false)) {
 	include DIR_APPLICATION . '/../admin/model/extension/payment/ecomprocessing/genesis/vendor/autoload.php';
 }
 
-if (!class_exists('EComprocessingHelper', false)) {
-	include DIR_APPLICATION . '/../admin/model/extension/payment/ecomprocessing/EComprocessingHelper.php';
+if (!class_exists('EcomprocessingHelper', false)) {
+	include DIR_APPLICATION . '/../admin/model/extension/payment/ecomprocessing/EcomprocessingHelper.php';
 }
 
 /**
  * Base Abstract Model for Method Models
  *
- * Class ModelExtensionPaymentEComprocessingBase
+ * Class ModelExtensionPaymentEcomprocessingBase
  */
-abstract class ModelExtensionPaymentEComprocessingBase extends Model
+abstract class ModelExtensionPaymentEcomprocessingBase extends Model
 {
 	const PPRO_TRANSACTION_SUFFIX     = '_ppro';
 
@@ -47,6 +47,12 @@ abstract class ModelExtensionPaymentEComprocessingBase extends Model
 		\Genesis\API\Constants\Transaction\Parameters\Wallets\PayPal\PaymentTypes::SALE;
 	const PAYPAL_PAYMENT_TYPE_EXPRESS       =
 		\Genesis\API\Constants\Transaction\Parameters\Wallets\PayPal\PaymentTypes::EXPRESS;
+
+	const APPLE_PAY_TRANSACTION_PREFIX      = \Genesis\API\Constants\Transaction\Types::APPLE_PAY . '_';
+	const APPLE_PAY_PAYMENT_TYPE_AUTHORIZE  =
+		\Genesis\API\Constants\Transaction\Parameters\Mobile\ApplePay\PaymentTypes::AUTHORIZE;
+	const APPLE_PAY_PAYMENT_TYPE_SALE       =
+		\Genesis\API\Constants\Transaction\Parameters\Mobile\ApplePay\PaymentTypes::SALE;
 
 	/**
 	 * Max. number of records of the cron log

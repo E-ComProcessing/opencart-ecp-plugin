@@ -17,16 +17,16 @@
  * @license	 http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
  */
 
-if (!class_exists('ControllerExtensionPaymentEComprocessingBase')) {
+if (!class_exists('ControllerExtensionPaymentEcomprocessingBase')) {
 	require_once DIR_APPLICATION . "controller/extension/payment/ecomprocessing/base_controller.php";
 }
 
 /**
  * Front-end controller for the "E-Comprocessing Checkout" module
  *
- * @package EComprocessingCheckout
+ * @package EcomprocessingCheckout
  */
-class ControllerExtensionPaymentEComprocessingCheckout extends ControllerExtensionPaymentEComprocessingBase
+class ControllerExtensionPaymentEcomprocessingCheckout extends ControllerExtensionPaymentEcomprocessingBase
 {
 
 	/**
@@ -295,7 +295,7 @@ class ControllerExtensionPaymentEComprocessingCheckout extends ControllerExtensi
 				if (isset($transaction['order_id']) && abs((int)$transaction['order_id']) > 0) {
 					if (isset($wpf_reconcile->payment_transaction)) {
 
-						$payment_transaction = $wpf_reconcile->payment_transaction;
+						$payment_transaction = $this->getPaymentTransaction($wpf_reconcile);
 
 						$timestamp = ($payment_transaction->timestamp instanceof \DateTime) ? $payment_transaction->timestamp->format('c') : $payment_transaction->timestamp;
 
@@ -459,5 +459,24 @@ class ControllerExtensionPaymentEComprocessingCheckout extends ControllerExtensi
 		$user_hash = ($user_id > 0) ? sha1($user_id) : $this->model_extension_payment_ecomprocessing_checkout->genTransactionId();
 
 		return substr($user_hash, 0, $length);
+	}
+
+	/**
+	* Get the payment transaction or the first element if we have reference transaction
+	*
+	* @param \StdClass $wpf_reconcile
+	* @return \StdClass
+	*/
+	private function getPaymentTransaction($wpf_reconcile)
+	{
+		if (!isset($wpf_reconcile->payment_transaction)) {
+			return $wpf_reconcile;
+		}
+
+		if ($wpf_reconcile->payment_transaction instanceof \ArrayObject) {
+			return $wpf_reconcile->payment_transaction[0];
+		}
+
+		return $wpf_reconcile->payment_transaction;
 	}
 }

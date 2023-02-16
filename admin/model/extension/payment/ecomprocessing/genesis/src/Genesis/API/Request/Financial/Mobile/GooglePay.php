@@ -23,7 +23,7 @@
 
 namespace Genesis\API\Request\Financial\Mobile;
 
-use Genesis\API\Constants\Transaction\Parameters\Mobile\GooglePay\PaymentTypes;
+use Genesis\API\Constants\Transaction\Parameters\Mobile\GooglePay\PaymentTypes as GooglePaySubtypes;
 use Genesis\API\Constants\Transaction\Types as TransactionType;
 use Genesis\API\Request\Base\Financial;
 use Genesis\API\Traits\Request\DocumentAttributes;
@@ -88,7 +88,7 @@ class GooglePay extends Financial
     {
         $requiredFields = [
             'transaction_id',
-            'payment_type',
+            'payment_subtype',
             'amount',
             'currency',
             'token_signature',
@@ -100,10 +100,29 @@ class GooglePay extends Financial
         $this->requiredFields = CommonUtils::createArrayObject($requiredFields);
 
         $requiredFieldValues = [
-            'currency'     => Currency::getList(),
-            'payment_type' => PaymentTypes::getAllowedPaymentTypes(),
+            'currency'        => Currency::getList(),
+            'payment_subtype' => GooglePaySubtypes::getAllowedPaymentTypes(),
         ];
         $this->requiredFieldValues = CommonUtils::createArrayObject($requiredFieldValues);
+    }
+
+    /**
+     * Add document_id conditional validation if it is present
+     *
+     * @return void
+     * @throws InvalidArgument
+     * @throws \Genesis\Exceptions\ErrorParameter
+     * @throws \Genesis\Exceptions\InvalidClassMethod
+     */
+    protected function checkRequirements()
+    {
+        if ($this->document_id) {
+            $this->requiredFieldValuesConditional = CommonUtils::createArrayObject(
+                $this->getDocumentIdConditions()
+            );
+        }
+
+        parent::checkRequirements();
     }
 
     /**
@@ -118,7 +137,7 @@ class GooglePay extends Financial
             'amount'              => $this->transformAmount($this->amount, $this->currency),
             'currency'            => $this->currency,
             'remote_ip'           => $this->remote_ip,
-            'payment_type'        => $this->payment_type,
+            'payment_subtype'     => $this->payment_subtype,
             'payment_token'       => $this->getPaymentTokenStructure(),
             'customer_email'      => $this->customer_email,
             'customer_phone'      => $this->customer_phone,

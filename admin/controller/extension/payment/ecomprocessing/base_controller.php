@@ -21,20 +21,20 @@ if (!class_exists('\Genesis\Genesis', false)) {
 	include DIR_APPLICATION . '/../admin/model/extension/payment/ecomprocessing/genesis/vendor/autoload.php';
 }
 
-if (!class_exists('EComprocessingHelper')) {
-	require_once DIR_APPLICATION . "model/extension/payment/ecomprocessing/EComprocessingHelper.php";
+if (!class_exists('EcomprocessingHelper')) {
+	require_once DIR_APPLICATION . "model/extension/payment/ecomprocessing/EcomprocessingHelper.php";
 }
 
 /**
  * Base Abstract Class for Method Admin Controllers
  *
- * Class ControllerExtensionPaymentEComprocessingBase
+ * Class ControllerExtensionPaymentEcomprocessingBase
  */
-abstract class ControllerExtensionPaymentEComprocessingBase extends Controller
+abstract class ControllerExtensionPaymentEcomprocessingBase extends Controller
 {
 	/**
 	 * OpenCart constants
-	 * The complete set of constants is defined in the ModelExtensionPaymentEComprocessingBase class
+	 * The complete set of constants is defined in the ModelExtensionPaymentEcomprocessingBase class
 	 */
 	const OC_REC_TXN_CANCELLED = 5;
 	const OC_ORD_STATUS_REFUNDED = 11;
@@ -83,7 +83,7 @@ abstract class ControllerExtensionPaymentEComprocessingBase extends Controller
 	abstract protected function isModuleRequiresSsl();
 
 	/**
-	 * ControllerExtensionPaymentEComprocessingBase constructor.
+	 * ControllerExtensionPaymentEcomprocessingBase constructor.
 	 * @param $registry
 	 * @throws Exception
 	 */
@@ -92,7 +92,7 @@ abstract class ControllerExtensionPaymentEComprocessingBase extends Controller
 		parent::__construct($registry);
 
 		if (is_null($this->module_name)) {
-			throw new Exception('Module name not supplied in EComprocessing controller');
+			throw new Exception('Module name not supplied in Ecomprocessing controller');
 		}
 
 		$this->route_prefix = $this->isVersion23OrAbove() ? "extension/" : "";
@@ -313,13 +313,13 @@ abstract class ControllerExtensionPaymentEComprocessingBase extends Controller
 		$data = $this->buildLanguagePhrases();
 
 		$data += array(
-			'module_version' => $this->getModelInstance()->getVersion(),
+			'module_version'              => $this->getModelInstance()->getVersion(),
 			'geo_zones'                   => $this->model_localisation_geo_zone->getGeoZones(),
 			'order_statuses'              => $this->model_localisation_order_status->getOrderStatuses(),
 			'transaction_types'           => $this->getModelInstance()->getTransactionTypes(),
 			'recurring_transaction_types' => $this->getModelInstance()->getRecurringTransactionTypes(),
-			'error_warning'              => isset($this->error['warning']) ? $this->error['warning'] : '',
-			'enable_recurring_tab'       => $this->isVersion22OrAbove(),
+			'error_warning'               => isset($this->error['warning']) ? $this->error['warning'] : '',
+			'enable_recurring_tab'        => $this->isVersion22OrAbove(),
 
 			// Settings
 			"{$this->module_name}_username"                   => $this->getFieldValue("{$this->module_name}_username"),
@@ -344,6 +344,7 @@ abstract class ControllerExtensionPaymentEComprocessingBase extends Controller
 			"{$this->module_name}_recurring_token"            => $this->getFieldValue("{$this->module_name}_recurring_token"),
 			"{$this->module_name}_cron_allowed_ip"            => $this->getFieldValue("{$this->module_name}_cron_allowed_ip"),
 			"{$this->module_name}_cron_time_limit"            => $this->getFieldValue("{$this->module_name}_cron_time_limit"),
+			"{$this->module_name}_bank_codes"                 => $this->getFieldValue("{$this->module_name}_bank_codes"),
 
 			'action' => $this->url->link("{$this->route_prefix}payment/{$this->module_name}", $this->getTokenParam() . '=' . $this->getToken(), 'SSL'),
 			'cancel' =>	$this->getPaymentLink($this->getToken()),
@@ -357,6 +358,12 @@ abstract class ControllerExtensionPaymentEComprocessingBase extends Controller
 
 			'module_name' => $this->module_name
 		);
+
+		if ($this->module_name == 'ecomprocessing_checkout') {
+			$data += [
+				'bank_codes' => $this->getModelInstance()->getBankCodes()
+			];
+		}
 
 		$default_param_values = array(
 			"{$this->module_name}_sandbox"                  => 1,
@@ -439,6 +446,7 @@ abstract class ControllerExtensionPaymentEComprocessingBase extends Controller
 			'entry_cron_time_limit',
 			'entry_cron_allowed_ip',
 			'entry_cron_last_execution',
+			'entry_bank_codes',
 
 			'entry_order_status',
 			'entry_async_order_status',
@@ -645,7 +653,8 @@ abstract class ControllerExtensionPaymentEComprocessingBase extends Controller
 						\Genesis\API\Constants\Transaction\Types::AUTHORIZE,
 						\Genesis\API\Constants\Transaction\Types::AUTHORIZE_3D,
 						\Genesis\API\Constants\Transaction\Types::GOOGLE_PAY,
-						\Genesis\API\Constants\Transaction\Types::PAY_PAL
+						\Genesis\API\Constants\Transaction\Types::PAY_PAL,
+						\Genesis\API\Constants\Transaction\Types::APPLE_PAY,
 					),
 					\Genesis\API\Constants\Transaction\States::APPROVED
 				);
@@ -735,8 +744,8 @@ abstract class ControllerExtensionPaymentEComprocessingBase extends Controller
 					$amount,
 					$transaction['currency'],
 					empty($message) ? 'Capture Opencart Transaction' : $message,
-					$terminal_token,
-					$transaction['order_id']
+					$transaction['order_id'],
+					$terminal_token
 				);
 
 				if (isset($capture->unique_id)) {
@@ -1388,7 +1397,7 @@ abstract class ControllerExtensionPaymentEComprocessingBase extends Controller
 
 		if ($this->isTransactionWithCustomAttribute($transaction['type'])) {
 			return $this->checkReferenceActionByCustomAttr(
-				EComprocessingHelper::REFERENCE_ACTION_CAPTURE,
+				EcomprocessingHelper::REFERENCE_ACTION_CAPTURE,
 				$transaction['type']
 			);
 		}
@@ -1410,7 +1419,7 @@ abstract class ControllerExtensionPaymentEComprocessingBase extends Controller
 
 		if ($this->isTransactionWithCustomAttribute($transaction['type'])) {
 			return $this->checkReferenceActionByCustomAttr(
-				EComprocessingHelper::REFERENCE_ACTION_REFUND,
+				EcomprocessingHelper::REFERENCE_ACTION_REFUND,
 				$transaction['type']
 			);
 		}
@@ -1759,7 +1768,7 @@ abstract class ControllerExtensionPaymentEComprocessingBase extends Controller
 	}
 
 	/**
-	 * Determine if Google Pay or PayPal Method is chosen inside the Payment settings
+	 * Determine if Google Pay, PayPal ot Apple Pay Method is chosen inside the Payment settings
 	 *
 	 * @param string $method GooglePay or PayPal Method
 	 * @return bool
@@ -1768,7 +1777,8 @@ abstract class ControllerExtensionPaymentEComprocessingBase extends Controller
 	{
 		$transaction_types = [
 			\Genesis\API\Constants\Transaction\Types::GOOGLE_PAY,
-			\Genesis\API\Constants\Transaction\Types::PAY_PAL
+			\Genesis\API\Constants\Transaction\Types::PAY_PAL,
+			\Genesis\API\Constants\Transaction\Types::APPLE_PAY,
 		];
 
 		return in_array($transaction_type, $transaction_types);
@@ -1791,40 +1801,57 @@ abstract class ControllerExtensionPaymentEComprocessingBase extends Controller
 
 		switch ($transaction_type) {
 			case \Genesis\API\Constants\Transaction\Types::GOOGLE_PAY:
-				if (EComprocessingHelper::REFERENCE_ACTION_CAPTURE === $action) {
+				if (EcomprocessingHelper::REFERENCE_ACTION_CAPTURE === $action) {
 					return in_array(
-						EComprocessingHelper::GOOGLE_PAY_TRANSACTION_PREFIX .
-						EComprocessingHelper::GOOGLE_PAY_PAYMENT_TYPE_AUTHORIZE,
+						EcomprocessingHelper::GOOGLE_PAY_TRANSACTION_PREFIX .
+						EcomprocessingHelper::GOOGLE_PAY_PAYMENT_TYPE_AUTHORIZE,
 						$selected_types
 					);
 				}
 
-				if (EComprocessingHelper::REFERENCE_ACTION_REFUND === $action) {
+				if (EcomprocessingHelper::REFERENCE_ACTION_REFUND === $action) {
 					return in_array(
-						EComprocessingHelper::GOOGLE_PAY_TRANSACTION_PREFIX .
-						EComprocessingHelper::GOOGLE_PAY_PAYMENT_TYPE_SALE,
+						EcomprocessingHelper::GOOGLE_PAY_TRANSACTION_PREFIX .
+						EcomprocessingHelper::GOOGLE_PAY_PAYMENT_TYPE_SALE,
 						$selected_types
 					);
 				}
 				break;
 			case \Genesis\API\Constants\Transaction\Types::PAY_PAL:
-				if (EComprocessingHelper::REFERENCE_ACTION_CAPTURE === $action) {
+				if (EcomprocessingHelper::REFERENCE_ACTION_CAPTURE === $action) {
 					return in_array(
-						EComprocessingHelper::PAYPAL_TRANSACTION_PREFIX .
-						EComprocessingHelper::PAYPAL_PAYMENT_TYPE_AUTHORIZE,
+						EcomprocessingHelper::PAYPAL_TRANSACTION_PREFIX .
+						EcomprocessingHelper::PAYPAL_PAYMENT_TYPE_AUTHORIZE,
 						$selected_types
 					);
 				}
 
-				if (EComprocessingHelper::REFERENCE_ACTION_REFUND === $action) {
+				if (EcomprocessingHelper::REFERENCE_ACTION_REFUND === $action) {
 					$refundable_types = [
-						EComprocessingHelper::PAYPAL_TRANSACTION_PREFIX .
-						EComprocessingHelper::PAYPAL_PAYMENT_TYPE_SALE,
-						EComprocessingHelper::PAYPAL_TRANSACTION_PREFIX .
-						EComprocessingHelper::PAYPAL_PAYMENT_TYPE_EXPRESS
+						EcomprocessingHelper::PAYPAL_TRANSACTION_PREFIX .
+						EcomprocessingHelper::PAYPAL_PAYMENT_TYPE_SALE,
+						EcomprocessingHelper::PAYPAL_TRANSACTION_PREFIX .
+						EcomprocessingHelper::PAYPAL_PAYMENT_TYPE_EXPRESS
 					];
 
 					return (count(array_intersect($refundable_types, $selected_types)) > 0);
+				}
+				break;
+			case \Genesis\API\Constants\Transaction\Types::APPLE_PAY:
+				if (EcomprocessingHelper::REFERENCE_ACTION_CAPTURE === $action) {
+					return in_array(
+						EcomprocessingHelper::APPLE_PAY_TRANSACTION_PREFIX .
+						EcomprocessingHelper::APPLE_PAY_PAYMENT_TYPE_AUTHORIZE,
+						$selected_types
+					);
+				}
+
+				if (EcomprocessingHelper::REFERENCE_ACTION_REFUND === $action) {
+					return in_array(
+						EcomprocessingHelper::APPLE_PAY_TRANSACTION_PREFIX .
+						EcomprocessingHelper::APPLE_PAY_PAYMENT_TYPE_SALE,
+						$selected_types
+					);
 				}
 				break;
 			default:

@@ -17,16 +17,16 @@
  * @license	 http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
  */
 
-if (!class_exists('ControllerExtensionPaymentEComprocessingBase')) {
+if (!class_exists('ControllerExtensionPaymentEcomprocessingBase')) {
 	require_once DIR_APPLICATION . "controller/extension/payment/ecomprocessing/base_controller.php";
 }
 
 /**
  * Backend controller for the "E-Comprocessing Checkout" module
  *
- * @package EComprocessingCheckout
+ * @package EcomprocessingCheckout
  */
-class ControllerExtensionPaymentEComprocessingCheckout extends ControllerExtensionPaymentEComprocessingBase
+class ControllerExtensionPaymentEcomprocessingCheckout extends ControllerExtensionPaymentEcomprocessingBase
 {
 	/**
 	 * Module Name (Used in View - Templates)

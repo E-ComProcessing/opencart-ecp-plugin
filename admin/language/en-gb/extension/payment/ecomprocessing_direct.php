@@ -17,8 +17,8 @@
  * @license     http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
  */
 
-if (!class_exists('EComprocessingHelper')) {
-	require_once DIR_APPLICATION . "model/extension/payment/ecomprocessing/EComprocessingHelper.php";
+if (!class_exists('EcomprocessingHelper')) {
+	require_once DIR_APPLICATION . "model/extension/payment/ecomprocessing/EcomprocessingHelper.php";
 }
 
 // Heading
@@ -69,7 +69,7 @@ $_['entry_cron_allowed_ip']             = 'IP address';
 $_['entry_cron_last_execution']         = 'Cron/schtasks last execution';
 
 // Transaction Types
-$_ = array_merge($_, EComprocessingHelper::getTransactionTypeNames());
+$_ = array_merge($_, EcomprocessingHelper::getTransactionTypeNames());
 
 // Transaction View
 $_['text_payment_info']          = 'E-Comprocessing transactions';

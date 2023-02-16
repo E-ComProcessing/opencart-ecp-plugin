@@ -21,34 +21,33 @@
  * @license     http://opensource.org/licenses/MIT The MIT License
  */
 
-namespace Genesis\API\Constants\Transaction\Parameters\Mobile\GooglePay;
+namespace Genesis\API\Constants\Transaction\Parameters\Payout;
 
 use Genesis\Utils\Common as CommonUtils;
 
-class PaymentTypes
+/**
+ * Money transfer payout is a standard payout with additional parameters.
+ * The section and parameters below are optional and to be considered only when present.
+ *
+ * @package Genesis\API\Constants\Transaction\Parameters\Payout
+ */
+class MoneyTransferTypes
 {
-    /**
-     * Google Pay authorize payment subtype
-     */
-    const AUTHORIZE           = 'authorize';
+    const ACCOUNT_TO_ACCOUNT = 'account_to_account';
+
+    const PERSON_TO_PERSON   = 'person_to_person';
+
+    const WALLET_TRANSFER    = 'wallet_transfer';
+
+    const FUNDS_TRANSFER     = 'funds_transfer';
 
     /**
-     * Google Pay init_recurring_sale payment subtype
-     */
-    const INIT_RECURRING_SALE = 'init_recurring_sale';
-
-    /**
-     * Google Pay sale payment subtype
-     */
-    const SALE                = 'sale';
-
-    /**
-     * Get Google Pay allowed payment types
+     * Get payment allowed payment
      *
      * @return array
      */
-    public static function getAllowedPaymentTypes()
+    public static function getAllowedMoneyTransferTypes()
     {
-        return CommonUtils::getClassConstants(__CLASS__);
+        return CommonUtils::getClassConstants(self::class);
     }
 }

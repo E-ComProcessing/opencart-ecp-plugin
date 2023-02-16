@@ -22,9 +22,9 @@ require_once DIR_APPLICATION . 'model/extension/payment/ecomprocessing/base_mode
 /**
  * Front-end model for the "E-Comprocessing Checkout" module
  *
- * @package EComprocessingCheckout
+ * @package EcomprocessingCheckout
  */
-class ModelExtensionPaymentEComprocessingCheckout extends ModelExtensionPaymentEComprocessingBase
+class ModelExtensionPaymentEcomprocessingCheckout extends ModelExtensionPaymentEcomprocessingBase
 {
 	/**
 	 * Module Name
@@ -243,13 +243,7 @@ class ModelExtensionPaymentEComprocessingCheckout extends ModelExtensionPaymentE
 	public function populateTransaction($data = array())
 	{
 		try {
-			$self = $this;
-
-			// Sanitize the input data
-			array_walk($data, function (&$column, &$value) use ($self) {
-				$column = $self->db->escape($column);
-				$value  = $self->db->escape($value);
-			});
+			$data = EcomprocessingHelper::sanitizeData($data, $this);
 
 			// Check if transaction exists
 			$insert_query = $this->db->query("
@@ -589,6 +583,10 @@ class ModelExtensionPaymentEComprocessingCheckout extends ModelExtensionPaymentE
 				\Genesis\API\Constants\Transaction\Types::PAY_PAL,
 			self::PAYPAL_TRANSACTION_PREFIX . self::PAYPAL_PAYMENT_TYPE_EXPRESS           =>
 				\Genesis\API\Constants\Transaction\Types::PAY_PAL,
+			self::APPLE_PAY_TRANSACTION_PREFIX . self::APPLE_PAY_PAYMENT_TYPE_AUTHORIZE   =>
+				\Genesis\API\Constants\Transaction\Types::APPLE_PAY,
+			self::APPLE_PAY_TRANSACTION_PREFIX . self::APPLE_PAY_PAYMENT_TYPE_SALE        =>
+				\Genesis\API\Constants\Transaction\Types::APPLE_PAY,
 		]);
 
 		foreach ($selected_types as $selected_type) {
@@ -605,7 +603,8 @@ class ModelExtensionPaymentEComprocessingCheckout extends ModelExtensionPaymentE
 						[
 							self::PPRO_TRANSACTION_SUFFIX,
 							self::GOOGLE_PAY_TRANSACTION_PREFIX,
-							self::PAYPAL_TRANSACTION_PREFIX
+							self::PAYPAL_TRANSACTION_PREFIX,
+							self::APPLE_PAY_TRANSACTION_PREFIX
 						],
 						'',
 						$selected_type
@@ -670,7 +669,7 @@ class ModelExtensionPaymentEComprocessingCheckout extends ModelExtensionPaymentE
 				);
 				break;
 			case \Genesis\API\Constants\Transaction\Types::KLARNA_AUTHORIZE:
-				$parameters = EComprocessingHelper::getKlarnaCustomParamItems($order)->toArray();
+				$parameters = EcomprocessingHelper::getKlarnaCustomParamItems($order)->toArray();
 				break;
 			case \Genesis\API\Constants\Transaction\Types::TRUSTLY_SALE:
 				$current_user_id = $order['additional']['user_id'];
@@ -678,6 +677,18 @@ class ModelExtensionPaymentEComprocessingCheckout extends ModelExtensionPaymentE
 				$parameters = array(
 					'user_id' => $user_id
 				);
+				break;
+			case \Genesis\API\Constants\Transaction\Types::ONLINE_BANKING_PAYIN:
+				$selected_bank_codes = $this->config->get('ecomprocessing_checkout_bank_codes');
+
+				if (\Genesis\Utils\Common::isValidArray($selected_bank_codes)) {
+					$parameters['bank_codes'] = array_map(
+						function ($value) {
+							return ['bank_code' => $value];
+						},
+						$selected_bank_codes
+					);
+				}
 				break;
 		}
 
@@ -722,7 +733,7 @@ class ModelExtensionPaymentEComprocessingCheckout extends ModelExtensionPaymentE
 	public function logEx($exception)
 	{
 		if ($this->config->get('ecomprocessing_checkout_debug')) {
-			$log = new Log('EComprocessing_checkout.log');
+			$log = new Log('Ecomprocessing_checkout.log');
 			$log->write($this->jTraceEx($exception));
 		}
 	}
@@ -795,6 +806,7 @@ class ModelExtensionPaymentEComprocessingCheckout extends ModelExtensionPaymentE
 				$result = 'payment_type';
 				break;
 			case \Genesis\API\Constants\Transaction\Types::GOOGLE_PAY:
+			case \Genesis\API\Constants\Transaction\Types::APPLE_PAY:
 				$result = 'payment_subtype';
 				break;
 			default:

@@ -21,34 +21,46 @@
  * @license     http://opensource.org/licenses/MIT The MIT License
  */
 
-namespace Genesis\API\Constants\Transaction\Parameters\Mobile\GooglePay;
+namespace Genesis\API\Constants\Transaction\Parameters;
 
 use Genesis\Utils\Common as CommonUtils;
 
-class PaymentTypes
+/**
+ * Class RussianMobileOperators
+ *
+ * List of supported Russian mobile operators
+ *
+ * @package Genesis\API\Constants
+ */
+class RussianMobileOperators
 {
     /**
-     * Google Pay authorize payment subtype
+     * MTC
      */
-    const AUTHORIZE           = 'authorize';
+    const MTC = 'mtc';
 
     /**
-     * Google Pay init_recurring_sale payment subtype
+     * Megafon
      */
-    const INIT_RECURRING_SALE = 'init_recurring_sale';
+    const MEGAFON = 'megafon';
 
     /**
-     * Google Pay sale payment subtype
+     * Tele2
      */
-    const SALE                = 'sale';
+    const TELE2 = 'tele2';
 
     /**
-     * Get Google Pay allowed payment types
+     * Beeline
+     */
+    const BEELINE = 'beeline';
+
+    /**
+     * Retrieve list of all operator codes
      *
      * @return array
      */
-    public static function getAllowedPaymentTypes()
+    public static function getAll()
     {
-        return CommonUtils::getClassConstants(__CLASS__);
+        return CommonUtils::getClassConstants(self::class);
     }
 }

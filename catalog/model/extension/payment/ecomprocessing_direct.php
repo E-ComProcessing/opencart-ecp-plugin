@@ -22,9 +22,9 @@ require_once DIR_APPLICATION . 'model/extension/payment/ecomprocessing/base_mode
 /**
  * Front-end model for the "E-Comprocessing Direct" module
  *
- * @package EComprocessingDirect
+ * @package EcomprocessingDirect
  */
-class ModelExtensionPaymentEComprocessingDirect extends ModelExtensionPaymentEComprocessingBase
+class ModelExtensionPaymentEcomprocessingDirect extends ModelExtensionPaymentEcomprocessingBase
 {
 	/**
 	 * Module Name
@@ -151,13 +151,7 @@ class ModelExtensionPaymentEComprocessingDirect extends ModelExtensionPaymentECo
 	public function populateTransaction($data = array())
 	{
 		try {
-			$self = $this;
-
-			// Sanitize the input data
-			array_walk($data, function (&$column, &$value) use ($self) {
-				$column = $self->db->escape($column);
-				$value  = $self->db->escape($value);
-			});
+			$data = EcomprocessingHelper::sanitizeData($data, $this);
 
 			// Check if transaction exists
 			$insert_query = $this->db->query("
@@ -456,7 +450,7 @@ class ModelExtensionPaymentEComprocessingDirect extends ModelExtensionPaymentECo
 	public function logEx($exception)
 	{
 		if ($this->config->get('ecomprocessing_direct_debug')) {
-			$log = new Log('EComprocessing_direct.log');
+			$log = new Log('Ecomprocessing_direct.log');
 			$log->write($this->jTraceEx($exception));
 		}
 	}

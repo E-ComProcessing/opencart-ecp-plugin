@@ -27,7 +27,7 @@ if (!class_exists('\Genesis\Genesis', false)) {
 	require $path;
 }
 
-if (!class_exists('ModelExtensionPaymentEComprocessingBase', false)) {
+if (!class_exists('ModelExtensionPaymentEcomprocessingBase', false)) {
 	if (strpos(DIR_APPLICATION, 'admin') === false) {
 		$path = DIR_APPLICATION . 'model/extension/payment/ecomprocessing/base_model.php';
 	} else {
@@ -38,10 +38,10 @@ if (!class_exists('ModelExtensionPaymentEComprocessingBase', false)) {
 }
 
 /**
- * Class EComprocessingHelper
- * @package EComprocessing
+ * Class EcomprocessingHelper
+ * @package Ecomprocessing
  */
-class EComprocessingHelper
+class EcomprocessingHelper
 {
 	const PPRO_TRANSACTION_SUFFIX     = '_ppro';
 	const TRANSACTION_LANGUAGE_PREFIX = 'text_transaction_';
@@ -59,6 +59,12 @@ class EComprocessingHelper
 		\Genesis\API\Constants\Transaction\Parameters\Wallets\PayPal\PaymentTypes::SALE;
 	const PAYPAL_PAYMENT_TYPE_EXPRESS       =
 		\Genesis\API\Constants\Transaction\Parameters\Wallets\PayPal\PaymentTypes::EXPRESS;
+
+	const APPLE_PAY_TRANSACTION_PREFIX      = \Genesis\API\Constants\Transaction\Types::APPLE_PAY . '_';
+	const APPLE_PAY_PAYMENT_TYPE_AUTHORIZE  =
+		\Genesis\API\Constants\Transaction\Parameters\Mobile\ApplePay\PaymentTypes::AUTHORIZE;
+	const APPLE_PAY_PAYMENT_TYPE_SALE       =
+		\Genesis\API\Constants\Transaction\Parameters\Mobile\ApplePay\PaymentTypes::SALE;
 
 	const REFERENCE_ACTION_CAPTURE = 'capture';
 	const REFERENCE_ACTION_REFUND  = 'refund';
@@ -86,7 +92,7 @@ class EComprocessingHelper
 		$data = array();
 
 		foreach (\Genesis\API\Constants\Transaction\Types::getWPFTransactionTypes() as $type) {
-			$key        = EComprocessingHelper::TRANSACTION_LANGUAGE_PREFIX . $type;
+			$key        = EcomprocessingHelper::TRANSACTION_LANGUAGE_PREFIX . $type;
 			$data[$key] = \Genesis\API\Constants\Transaction\Names::getName($type);
 		}
 
@@ -115,7 +121,7 @@ class EComprocessingHelper
 		$items = new \Genesis\API\Request\Financial\Alternatives\Klarna\Items($order['currency']);
 		foreach ($order['additional']['product_order_info'] as $product) {
 			$tax_class_id = \Genesis\API\Request\Financial\Alternatives\Klarna\Item::ITEM_TYPE_PHYSICAL;
-			if ($tax_class_ids[$product['product_id']] == ModelPaymentEComprocessingBase::OC_TAX_CLASS_VIRTUAL_PRODUCT) {
+			if ($tax_class_ids[$product['product_id']] == ModelPaymentecomprocessingBase::OC_TAX_CLASS_VIRTUAL_PRODUCT) {
 				$tax_class_id = \Genesis\API\Request\Financial\Alternatives\Klarna\Item::ITEM_TYPE_DIGITAL;
 			}
 
@@ -205,5 +211,33 @@ class EComprocessingHelper
 		}
 
 		return $tax;
+	}
+
+	/**
+	 * Return list of available Bank Codes for Online banking
+	 *
+	 * @return array
+	 */
+	public static function getAvailableBankCodes() {
+		return [
+			\Genesis\API\Constants\Banks::CPI => 'Interac Combined Pay-in'
+		];
+	}
+
+	/**
+	 * Sanitize data before insert into DB
+	 * @param $data
+	 * @param $model
+	 * @return array
+	 */
+	public static function sanitizeData($data, $model)
+	{
+		$result = array();
+
+		array_walk($data, function ($value, $key) use ($model, &$result) {
+			$result[$model->db->escape($key)] = $model->db->escape($value);
+		});
+
+		return $result;
 	}
 }

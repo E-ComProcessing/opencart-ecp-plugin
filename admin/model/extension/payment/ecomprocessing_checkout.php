@@ -17,16 +17,16 @@
  * @license     http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
  */
 
-if (!class_exists('EComprocessingHelper')) {
-	require_once DIR_APPLICATION . "model/extension/payment/ecomprocessing/EComprocessingHelper.php";
+if (!class_exists('EcomprocessingHelper')) {
+	require_once DIR_APPLICATION . "model/extension/payment/ecomprocessing/EcomprocessingHelper.php";
 }
 
 /**
  * Backend model for the "E-Comprocessing Checkout" module
  *
- * @package EComprocessingCheckout
+ * @package EcomprocessingCheckout
  */
-class ModelExtensionPaymentEComprocessingCheckout extends Model
+class ModelExtensionPaymentEcomprocessingCheckout extends Model
 {
 	/**
 	 * Holds the current module version
@@ -34,7 +34,7 @@ class ModelExtensionPaymentEComprocessingCheckout extends Model
 	 *
 	 * @var string
 	 */
-	protected $module_version = '1.4.9';
+	protected $module_version = '1.5.2';
 
 	/**
 	 * Perform installation logic
@@ -135,9 +135,11 @@ class ModelExtensionPaymentEComprocessingCheckout extends Model
 		$transactions = $this->getTransactionsByTypeAndStatus($order_id, $reference_id, $types, $status);
 		$total_amount = 0;
 
-		/** @var $transaction */
-		foreach ($transactions as $transaction) {
-			$total_amount +=  $transaction['amount'];
+		if ($transactions) {
+			/** @var $transaction */
+			foreach ($transactions as $transaction) {
+				$total_amount += $transaction['amount'];
+			}
 		}
 
 		return $total_amount;
@@ -264,13 +266,7 @@ class ModelExtensionPaymentEComprocessingCheckout extends Model
 	public function populateTransaction($data = array())
 	{
 		try {
-			$self = $this;
-
-			// Sanitize the input data
-			array_walk($data, function (&$column, &$value) use ($self) {
-				$column = $self->db->escape($column);
-				$value  = $self->db->escape($value);
-			});
+			$data = EcomprocessingHelper::sanitizeData($data, $this);
 
 			// Check if transaction exists
 			$insert_query = $this->db->query("
@@ -300,12 +296,12 @@ class ModelExtensionPaymentEComprocessingCheckout extends Model
 	 * @param string $amount Amount to be refunded
 	 * @param string $currency Currency for the refunded amount
 	 * @param string $usage Usage (optional text)
-	 * @param string $token Terminal token of the initial transaction
 	 * @param int    $order_id
+	 * @param string $token Terminal token of the initial transaction
 	 *
 	 * @return object
 	 */
-	public function capture($type, $reference_id, $amount, $currency, $usage = '', $token = null, $order_id)
+	public function capture($type, $reference_id, $amount, $currency, $usage, $order_id, $token = null)
 	{
 		try {
 			$this->bootstrap($token);
@@ -411,7 +407,7 @@ class ModelExtensionPaymentEComprocessingCheckout extends Model
 			)
 		);
 
-		return EComprocessingHelper::getKlarnaCustomParamItems(
+		return EcomprocessingHelper::getKlarnaCustomParamItems(
 			array(
 				'currency'   => $currency,
 				'additional' => array (
@@ -474,7 +470,7 @@ class ModelExtensionPaymentEComprocessingCheckout extends Model
 		$this->load->language('extension/payment/ecomprocessing_checkout');
 
 		$transaction_types = \Genesis\API\Constants\Transaction\Types::getWPFTransactionTypes();
-		$excluded_types    = EComprocessingHelper::getRecurringTransactionTypes();
+		$excluded_types    = EcomprocessingHelper::getRecurringTransactionTypes();
 
 		// Exclude SDD Recurring
 		array_push($excluded_types, \Genesis\API\Constants\Transaction\Types::SDD_INIT_RECURRING_SALE);
@@ -488,13 +484,16 @@ class ModelExtensionPaymentEComprocessingCheckout extends Model
 		// Exclude PayPal transaction. In this way PayPal Payment types will be introduced
 		array_push($excluded_types, \Genesis\API\Constants\Transaction\Types::PAY_PAL);
 
+		// Exclude Apple Pay transaction. This is not standalone transaction type
+		array_push($excluded_types, \Genesis\API\Constants\Transaction\Types::APPLE_PAY);
+
 		// Exclude Transaction Types
 		$transaction_types = array_diff($transaction_types, $excluded_types);
 
 		// Add PPRO types
 		$ppro_types = array_map(
 			function ($type) {
-				return $type . EComprocessingHelper::PPRO_TRANSACTION_SUFFIX;
+				return $type . EcomprocessingHelper::PPRO_TRANSACTION_SUFFIX;
 			},
 			\Genesis\API\Constants\Payment\Methods::getMethods()
 		);
@@ -502,7 +501,7 @@ class ModelExtensionPaymentEComprocessingCheckout extends Model
 		// Add Google Payment types
 		$google_pay_types = array_map(
 			function ($type) {
-				return EComprocessingHelper::GOOGLE_PAY_TRANSACTION_PREFIX . $type;
+				return EcomprocessingHelper::GOOGLE_PAY_TRANSACTION_PREFIX . $type;
 			},
 			[
 				\Genesis\API\Constants\Transaction\Parameters\Mobile\GooglePay\PaymentTypes::AUTHORIZE,
@@ -513,7 +512,7 @@ class ModelExtensionPaymentEComprocessingCheckout extends Model
 		// Add PayPal Payment types
 		$paypal_types = array_map(
 			function ($type) {
-				return EComprocessingHelper::PAYPAL_TRANSACTION_PREFIX . $type;
+				return EcomprocessingHelper::PAYPAL_TRANSACTION_PREFIX . $type;
 			},
 			[
 				\Genesis\API\Constants\Transaction\Parameters\Wallets\PayPal\PaymentTypes::AUTHORIZE,
@@ -522,11 +521,23 @@ class ModelExtensionPaymentEComprocessingCheckout extends Model
 			]
 		);
 
+		// Add Apple Pay Payment types
+		$apple_pay_types = array_map(
+			function ($type) {
+				return EcomprocessingHelper::APPLE_PAY_TRANSACTION_PREFIX . $type;
+			},
+			[
+				\Genesis\API\Constants\Transaction\Parameters\Mobile\ApplePay\PaymentTypes::AUTHORIZE,
+				\Genesis\API\Constants\Transaction\Parameters\Mobile\ApplePay\PaymentTypes::SALE
+			]
+		);
+
 		$transaction_types = array_merge(
 			$transaction_types,
 			$ppro_types,
 			$google_pay_types,
-			$paypal_types
+			$paypal_types,
+			$apple_pay_types
 		);
 		asort($transaction_types);
 
@@ -551,6 +562,26 @@ class ModelExtensionPaymentEComprocessingCheckout extends Model
 	}
 
 	/**
+	 * Returns formatted array with available Bank codes
+	 *
+	 * @return array
+	 */
+	public function getBankCodes()
+	{
+		$data = [];
+		$available_bank_codes = EcomprocessingHelper::getAvailableBankCodes();
+
+		foreach ($available_bank_codes as $value => $label) {
+			$data[] = [
+				'id'   => $value,
+				'name' => $label
+			];
+		}
+
+		return $data;
+	}
+
+	/**
 	 * Get localized recurring transaction types for Genesis
 	 *
 	 * @return array
@@ -565,14 +596,14 @@ class ModelExtensionPaymentEComprocessingCheckout extends Model
 			\Genesis\API\Constants\Transaction\Types::INIT_RECURRING_SALE    => array(
 				'id'   => \Genesis\API\Constants\Transaction\Types::INIT_RECURRING_SALE,
 				'name' => $this->language->get(
-					EComprocessingHelper::TRANSACTION_LANGUAGE_PREFIX .
+					EcomprocessingHelper::TRANSACTION_LANGUAGE_PREFIX .
 					\Genesis\API\Constants\Transaction\Types::INIT_RECURRING_SALE
 				)
 			),
 			\Genesis\API\Constants\Transaction\Types::INIT_RECURRING_SALE_3D => array(
 				'id'   => \Genesis\API\Constants\Transaction\Types::INIT_RECURRING_SALE_3D,
 				'name' => $this->language->get(
-					EComprocessingHelper::TRANSACTION_LANGUAGE_PREFIX .
+					EcomprocessingHelper::TRANSACTION_LANGUAGE_PREFIX .
 					\Genesis\API\Constants\Transaction\Types::INIT_RECURRING_SALE_3D
 				)
 			),
@@ -636,7 +667,7 @@ class ModelExtensionPaymentEComprocessingCheckout extends Model
 	public function logEx($exception)
 	{
 		if ($this->config->get('ecomprocessing_checkout_debug')) {
-			$log = new Log('EComprocessing_checkout.log');
+			$log = new Log('Ecomprocessing_checkout.log');
 			$log->write($this->jTraceEx($exception));
 		}
 	}

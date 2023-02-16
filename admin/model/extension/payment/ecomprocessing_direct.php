@@ -17,16 +17,16 @@
  * @license     http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
  */
 
-if (!class_exists('EComprocessingHelper')) {
-	require_once DIR_APPLICATION . 'model/extension/payment/ecomprocessing/EComprocessingHelper.php';
+if (!class_exists('EcomprocessingHelper')) {
+	require_once DIR_APPLICATION . 'model/extension/payment/ecomprocessing/EcomprocessingHelper.php';
 }
 
 /**
  * Backend model for the "E-Comprocessing Direct" module
  *
- * @package EComprocessingDirect
+ * @package EcomprocessingDirect
  */
-class ModelExtensionPaymentEComprocessingDirect extends Model
+class ModelExtensionPaymentEcomprocessingDirect extends Model
 {
 	/**
 	 * Holds the current module version
@@ -34,7 +34,7 @@ class ModelExtensionPaymentEComprocessingDirect extends Model
 	 *
 	 * @var string
 	 */
-	protected $module_version = '1.4.9';
+	protected $module_version = '1.5.2';
 
 	/**
 	 * Perform installation logic
@@ -125,9 +125,11 @@ class ModelExtensionPaymentEComprocessingDirect extends Model
 		$transactions = $this->getTransactionsByTypeAndStatus($order_id, $reference_id, $types, $status);
 		$total_amount = 0;
 
-		/** @var $transaction */
-		foreach ($transactions as $transaction) {
-			$total_amount +=  $transaction['amount'];
+		if ($transactions) {
+			/** @var $transaction */
+			foreach ($transactions as $transaction) {
+				$total_amount += $transaction['amount'];
+			}
 		}
 
 		return $total_amount;
@@ -254,13 +256,7 @@ class ModelExtensionPaymentEComprocessingDirect extends Model
 	public function populateTransaction($data = array())
 	{
 		try {
-			$self = $this;
-
-			// Sanitize the input data
-			array_walk($data, function (&$column, &$value) use ($self) {
-				$column = $self->db->escape($column);
-				$value  = $self->db->escape($value);
-			});
+			$data = EcomprocessingHelper::sanitizeData($data, $this);
 
 			// Check if transaction exists
 			$insert_query = $this->db->query("
@@ -292,7 +288,7 @@ class ModelExtensionPaymentEComprocessingDirect extends Model
 	 *
 	 * @return object
 	 */
-	public function capture($type, $reference_id, $amount, $currency, $usage = '')
+	public function capture($type, $reference_id, $amount, $currency, $usage)
 	{
 		try {
 			$this->bootstrap();
@@ -417,28 +413,28 @@ class ModelExtensionPaymentEComprocessingDirect extends Model
 			\Genesis\API\Constants\Transaction\Types::AUTHORIZE    => array(
 				'id'   => \Genesis\API\Constants\Transaction\Types::AUTHORIZE,
 				'name' => $this->language->get(
-					EComprocessingHelper::TRANSACTION_LANGUAGE_PREFIX .
+					EcomprocessingHelper::TRANSACTION_LANGUAGE_PREFIX .
 					\Genesis\API\Constants\Transaction\Types::AUTHORIZE
 				)
 			),
 			\Genesis\API\Constants\Transaction\Types::AUTHORIZE_3D => array(
 				'id'   => \Genesis\API\Constants\Transaction\Types::AUTHORIZE_3D,
 				'name' => $this->language->get(
-					EComprocessingHelper::TRANSACTION_LANGUAGE_PREFIX .
+					EcomprocessingHelper::TRANSACTION_LANGUAGE_PREFIX .
 					\Genesis\API\Constants\Transaction\Types::AUTHORIZE_3D
 				)
 			),
 			\Genesis\API\Constants\Transaction\Types::SALE         => array(
 				'id'   => \Genesis\API\Constants\Transaction\Types::SALE,
 				'name' => $this->language->get(
-					EComprocessingHelper::TRANSACTION_LANGUAGE_PREFIX .
+					EcomprocessingHelper::TRANSACTION_LANGUAGE_PREFIX .
 					\Genesis\API\Constants\Transaction\Types::SALE
 				)
 			),
 			\Genesis\API\Constants\Transaction\Types::SALE_3D      => array(
 				'id'   => \Genesis\API\Constants\Transaction\Types::SALE_3D,
 				'name' => $this->language->get(
-					EComprocessingHelper::TRANSACTION_LANGUAGE_PREFIX .
+					EcomprocessingHelper::TRANSACTION_LANGUAGE_PREFIX .
 					\Genesis\API\Constants\Transaction\Types::SALE_3D
 				)
 			),
@@ -458,12 +454,12 @@ class ModelExtensionPaymentEComprocessingDirect extends Model
 
 		$this->load->language('extension/payment/ecomprocessing_direct');
 
-		$types = EComprocessingHelper::getRecurringTransactionTypes();
+		$types = EcomprocessingHelper::getRecurringTransactionTypes();
 
 		foreach ($types as $type) {
-			$name = $this->language->get(EComprocessingHelper::TRANSACTION_LANGUAGE_PREFIX . $type);
+			$name = $this->language->get(EcomprocessingHelper::TRANSACTION_LANGUAGE_PREFIX . $type);
 
-			if (strpos($name, EComprocessingHelper::TRANSACTION_LANGUAGE_PREFIX) !== false) {
+			if (strpos($name, EcomprocessingHelper::TRANSACTION_LANGUAGE_PREFIX) !== false) {
 				$name = \Genesis\API\Constants\Transaction\Names::getName($type);
 			}
 
@@ -532,7 +528,7 @@ class ModelExtensionPaymentEComprocessingDirect extends Model
 	public function logEx($exception)
 	{
 		if ($this->config->get('ecomprocessing_direct_debug')) {
-			$log = new Log('EComprocessing_direct.log');
+			$log = new Log('Ecomprocessing_direct.log');
 			$log->write($this->jTraceEx($exception));
 		}
 	}

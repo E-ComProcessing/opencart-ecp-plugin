@@ -21,34 +21,56 @@
  * @license     http://opensource.org/licenses/MIT The MIT License
  */
 
-namespace Genesis\API\Constants\Transaction\Parameters\Mobile\GooglePay;
+namespace Genesis\API\Constants\Transaction\Parameters;
 
-use Genesis\Utils\Common as CommonUtils;
+use Genesis\Utils\Common;
 
-class PaymentTypes
+/**
+ * Class AfricanMobileOperators
+ *
+ * List of supported African mobile operators
+ *
+ * @package Genesis\API\Constants
+ */
+class AfricanMobileOperators
 {
     /**
-     * Google Pay authorize payment subtype
+     * Airtel Money
      */
-    const AUTHORIZE           = 'authorize';
+    const AIRTEL = 'AIRTEL';
 
     /**
-     * Google Pay init_recurring_sale payment subtype
+     * MTN Mobile Money
      */
-    const INIT_RECURRING_SALE = 'init_recurring_sale';
+    const MTN = 'MTN';
 
     /**
-     * Google Pay sale payment subtype
+     * Tigo Cash
      */
-    const SALE                = 'sale';
+    const TIGO = 'TIGO';
 
     /**
-     * Get Google Pay allowed payment types
+     * M-PESA
+     */
+    const VODACOM = 'VODACOM';
+
+    /**
+     * M-PESA
+     */
+    const SAFARICOM = 'SAFARICOM';
+
+    /**
+     * e-Mola
+     */
+    const MOVITEL = 'MOVITEL';
+
+    /**
+     * Retrieve list of all operator codes
      *
      * @return array
      */
-    public static function getAllowedPaymentTypes()
+    public static function getAllowedPayoutOperators()
     {
-        return CommonUtils::getClassConstants(__CLASS__);
+        return Common::getClassConstants(self::class);
     }
 }
