@@ -24,6 +24,9 @@ if (!class_exists('\Genesis\Genesis', false)) {
 if (!class_exists('EcomprocessingHelper', false)) {
 	include DIR_APPLICATION . '/../admin/model/extension/payment/ecomprocessing/EcomprocessingHelper.php';
 }
+if (!class_exists('EcomprocessingThreedsHelper', false)) {
+	include DIR_APPLICATION . '/../catalog/controller/extension/payment/ecomprocessing/EcomprocessingThreedsHelper.php';
+}
 
 /**
  * Base Abstract Model for Method Models
@@ -656,8 +659,6 @@ abstract class ModelExtensionPaymentEcomprocessingBase extends Model
 	{
 		if (!empty($this->config->get($this->module_name . '_recurring_token'))) {
 			$result = $this->config->get($this->module_name . '_recurring_token');
-		} elseif ($this->module_name == 'ecomprocessing_direct') {
-			$result = $this->config->get('ecomprocessing_direct_token');
 		} else {
 			$result = array_key_exists('terminal_token', $transaction) ? $transaction['terminal_token'] : null;
 		}

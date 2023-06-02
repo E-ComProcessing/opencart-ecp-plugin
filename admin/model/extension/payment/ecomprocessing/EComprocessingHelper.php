@@ -121,7 +121,7 @@ class EcomprocessingHelper
 		$items = new \Genesis\API\Request\Financial\Alternatives\Klarna\Items($order['currency']);
 		foreach ($order['additional']['product_order_info'] as $product) {
 			$tax_class_id = \Genesis\API\Request\Financial\Alternatives\Klarna\Item::ITEM_TYPE_PHYSICAL;
-			if ($tax_class_ids[$product['product_id']] == ModelPaymentecomprocessingBase::OC_TAX_CLASS_VIRTUAL_PRODUCT) {
+			if ($tax_class_ids[$product['product_id']] == ModelPaymentEcomprocessingBase::OC_TAX_CLASS_VIRTUAL_PRODUCT) {
 				$tax_class_id = \Genesis\API\Request\Financial\Alternatives\Klarna\Item::ITEM_TYPE_DIGITAL;
 			}
 
@@ -220,7 +220,8 @@ class EcomprocessingHelper
 	 */
 	public static function getAvailableBankCodes() {
 		return [
-			\Genesis\API\Constants\Banks::CPI => 'Interac Combined Pay-in'
+			\Genesis\API\Constants\Banks::CPI => 'Interac Combined Pay-in',
+			\Genesis\API\Constants\Banks::BCT => 'Bancontact'
 		];
 	}
 

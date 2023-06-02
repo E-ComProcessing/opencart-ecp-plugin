@@ -7,8 +7,7 @@ Requirements
 ------------
 
 * OpenCart 3.0.X - 3.0.3.X (due to architectural changes, this module is __incompatible__ with OpenCart 1.X and 2.0.X)
-* [GenesisPHP v1.21.2](https://github.com/GenesisGateway/genesis_php/tree/1.21.2) - (Integrated in Module)
-* PCI-certified server in order to use ```E-Comprocessing Direct```
+* [GenesisPHP v1.21.7](https://github.com/GenesisGateway/genesis_php/tree/1.21.7) - (Integrated in Module)
 
 GenesisPHP Requirements
 ------------
@@ -28,29 +27,16 @@ Installation via Extension Installer
 2.	Create a compressed ```zip``` file of the folder ```upload``` with name ```ecomprocessing.ocmod.zip``` (excluding ```README.md```)
 3.	Login inside the __OpenCart Admin Panel__
 4.	Navigate to ```Extensions -> Installer``` and click on button ```Upload``` and choose the ```zip``` file ```ecomprocessing.ocmod.zip```
-5.	Navigate to ```Extensions -> Payments``` and click install on ```E-Comprocessing Direct``` and/or ```E-Comprocessing Checkout```
-6.	Set the login credentials (```Username```, ```Password```, ```Token```) and adjust the configuration to your needs.
+5.	Navigate to ```Extensions -> Payments``` and click install on ```E-Comprocessing Checkout```
+6.	Set the login credentials (```Username```, ```Password```) and adjust the configuration to your needs.
 
 Installation (Manual)
 ------------
 
 1.  Upload the contents of the folder ```upload``` (excluding ```README.md```) to the ```<root>``` folder of your OpenCart installation
 2.  Login inside the __OpenCart Admin Panel__
-3.  Navigate to ```Extensions -> Payments``` and click install on ```E-Comprocessing Direct``` and/or ```E-Comprocessing Checkout```
-4.  Set the login credentials (```Username```, ```Password```, ```Token```) and adjust the configuration to your needs.
-
-Enable OpenCart SSL
-------------
-This steps should be followed if you wish to use the ```E-Comprocessing Direct``` Method.
-
-* Ensure you have installed a valid __SSL Certificate__ on your __PCI-DSS Certified__ Web Server and you have configured your __Virtual Host__ properly.
-* Login to your OpenCart Admin Panel
-* Navigate to ```Settings``` -> ```your Store``` -> ```Server```
-* Set ```Use SSL``` to __Yes__ in ```Security``` tab and save your changes
-* Set the __HTTPS_SERVER__ and __HTTPS_CATALOG__ settings in your ```admin/config.php``` to use ```https``` protocol
-* Set the __HTTPS_SERVER__ setting in your ```config.php``` to use ```https``` protocol
-* Set the __site_ssl__ setting to ```true``` in your ```system/config/default.php``` file
-* It is recommended to add a __Rewrite Rule__ from ```http``` to ```https``` or to add a __Permanent Redirect__ to ```https``` in your virtual host
+3.  Navigate to ```Extensions -> Payments``` and click install on  ```E-Comprocessing Checkout```
+4.  Set the login credentials (```Username```, ```Password```) and adjust the configuration to your needs.
 
 Recurring Payments
 ------------
@@ -70,12 +56,6 @@ in [wiki for Recurring Payments](https://github.com/E-ComProcessing/opencart-ecp
 
 Supported Transactions & Payment Methods
 ---------------------
-* ```E-Comprocessing Direct``` Payment Method
-  * __Authorize__
-  * __Authorize (3D-Secure)__
-  * __Sale__
-  * __Sale (3D-Secure)__
-
 * ```E-Comprocessing Checkout``` Payment Method
   * __Apple Pay__ 
   * __Argencard__
@@ -118,6 +98,7 @@ Supported Transactions & Payment Methods
   * __Neteller__
   * __Online Banking__
     * __Interac Combined Pay-in (CPI)__ 
+    * __Bancontact__ 
   * __OXXO__
   * __P24__
   * __Pago Facil__

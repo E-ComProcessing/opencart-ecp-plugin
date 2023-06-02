@@ -20,7 +20,7 @@
 require_once DIR_APPLICATION . 'model/extension/payment/ecomprocessing/base_model.php';
 
 /**
- * Front-end model for the "E-Comprocessing Checkout" module
+ * Front-end model for the "ecomprocessing Checkout" module
  *
  * @package EcomprocessingCheckout
  */
@@ -323,6 +323,32 @@ class ModelExtensionPaymentEcomprocessingCheckout extends ModelExtensionPaymentE
 				$this->prepareWpfRequestTokenization($genesis);
 			}
 
+			if ($this->isThreedsAllowed()) {
+				/** @var \Genesis\API\Request\WPF\Create $request */
+				$request = $genesis->request();
+				$request->setThreedsV2ControlChallengeIndicator($data['threeds_challenge_indicator'])
+					->setThreedsV2PurchaseCategory($data['threeds_purchase_category'])
+					->setThreedsV2MerchantRiskDeliveryTimeframe($data['threeds_delivery_timeframe'])
+					->setThreedsV2MerchantRiskShippingIndicator($data['threeds_shipping_indicator'])
+					->setThreedsV2MerchantRiskReorderItemsIndicator($data['threeds_reorder_items_indicator'])
+					->setThreedsV2CardHolderAccountRegistrationIndicator($data['threeds_registration_indicator'])
+				;
+				if (!$data['is_guest']) {
+					$request->setThreedsV2CardHolderAccountCreationDate($data['threeds_creation_date'])
+						->setThreedsV2CardHolderAccountShippingAddressDateFirstUsed($data['threads_shipping_address_date_first_used'])
+						->setThreedsV2CardHolderAccountShippingAddressUsageIndicator($data['threeds_shipping_address_usage_indicator'])
+						->setThreedsV2CardHolderAccountTransactionsActivityLast24Hours($data['transactions_activity_last_24_hours'])
+						->setThreedsV2CardHolderAccountTransactionsActivityPreviousYear($data['transactions_activity_previous_year'])
+						->setThreedsV2CardHolderAccountPurchasesCountLast6Months($data['purchases_count_last_6_months'])
+					;
+				}
+			}
+
+			$wpf_amount = (float)$genesis->request()->getAmount();
+			if ($wpf_amount <= $data['sca_exemption_amount']) {
+				$genesis->request()->setScaExemption($data['sca_exemption_value']);
+			}
+
 			$genesis->execute();
 
 			$this->saveWpfTokenizationData($genesis);
@@ -357,6 +383,11 @@ class ModelExtensionPaymentEcomprocessingCheckout extends ModelExtensionPaymentE
 	protected function isWpfTokenizationEnabled()
 	{
 		return (bool)$this->config->get('ecomprocessing_checkout_wpf_tokenization');
+	}
+
+	protected function isThreedsAllowed()
+	{
+		return (bool)$this->config->get('ecomprocessing_checkout_threeds_allowed');
 	}
 
 	/**
@@ -565,7 +596,9 @@ class ModelExtensionPaymentEcomprocessingCheckout extends ModelExtensionPaymentE
 		$processed_list = array();
 		$alias_map      = array();
 
-		$selected_types = $this->config->get('ecomprocessing_checkout_transaction_type');
+		$selected_types = $this->orderCardTransactionTypes(
+			$this->config->get('ecomprocessing_checkout_transaction_type')
+		);
 		$methods        = \Genesis\API\Constants\Payment\Methods::getMethods();
 
 		foreach ($methods as $method) {
@@ -814,5 +847,22 @@ class ModelExtensionPaymentEcomprocessingCheckout extends ModelExtensionPaymentE
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Order transaction types with Card Transaction types in front
+	 *
+	 * @param array $selected_types Selected transaction types
+	 * @return array
+	 */
+	private function orderCardTransactionTypes($selected_types)
+	{
+		$custom_order = \Genesis\API\Constants\Transaction\Types::getCardTransactionTypes();
+
+		asort($selected_types);
+
+		$sorted_array = array_intersect($custom_order, $selected_types);
+
+		return array_merge($sorted_array, array_diff($selected_types, $sorted_array));
 	}
 }

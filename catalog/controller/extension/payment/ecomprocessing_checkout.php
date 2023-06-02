@@ -17,14 +17,20 @@
  * @license	 http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
  */
 
+use Genesis\API\Constants\Transaction\Parameters\Threeds\V2\CardHolderAccount\RegistrationIndicators;
+use Genesis\API\Constants\Transaction\Parameters\Threeds\V2\MerchantRisk\DeliveryTimeframes;
+use Genesis\API\Constants\Transaction\Parameters\Threeds\V2\Purchase\Categories;
+
 if (!class_exists('ControllerExtensionPaymentEcomprocessingBase')) {
 	require_once DIR_APPLICATION . "controller/extension/payment/ecomprocessing/base_controller.php";
 }
 
 /**
- * Front-end controller for the "E-Comprocessing Checkout" module
+ * Front-end controller for the "ecomprocessing Checkout" module
  *
  * @package EcomprocessingCheckout
+ *
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class ControllerExtensionPaymentEcomprocessingCheckout extends ControllerExtensionPaymentEcomprocessingBase
 {
@@ -117,10 +123,14 @@ class ControllerExtensionPaymentEcomprocessingCheckout extends ControllerExtensi
 	 * Process order confirmation
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.LongVariable)
 	 */
 	public function send()
 	{
 		$this->load->model('checkout/order');
+		$this->load->model('account/order');
+		$this->load->model('account/customer');
 		$this->load->model('extension/payment/ecomprocessing_checkout');
 
 		$this->load->language('extension/payment/ecomprocessing_checkout');
@@ -139,6 +149,53 @@ class ControllerExtensionPaymentEcomprocessingCheckout extends ControllerExtensi
 					$product_order_info
 				)
 			);
+
+			$model_account_order             = $this->model_account_order;
+			$model_account_customer          = $this->model_account_customer;
+
+			$customer_orders                 = EcomprocessingThreedsHelper::getCustomerOrders(
+				$this->db,
+				$this->getCustomerId(),
+				(int)$this->config->get('config_store_id'),
+				(int)$this->config->get('config_language_id'),
+				$this->module_name
+			);
+
+			$is_guest                        = isset($this->session->data['guest']);
+			$has_physical_products           = EcomprocessingThreedsHelper::hasPhysicalProduct($product_info);
+			$threeds_challenge_indicator     = $this->config->get('ecomprocessing_checkout_threeds_challenge_indicator');
+
+			$threeds_purchase_category       = EcomprocessingThreedsHelper::hasPhysicalProduct($product_info) ? Categories::GOODS : Categories::SERVICE;
+			$threeds_delivery_timeframe      = ($has_physical_products) ? DeliveryTimeframes::ANOTHER_DAY : DeliveryTimeframes::ELECTRONICS;
+			$threeds_shipping_indicator      = EcomprocessingThreedsHelper::getShippingIndicator($has_physical_products, $order_info, $is_guest);
+			$threeds_reorder_items_indicator = EcomprocessingThreedsHelper::getReorderItemsIndicator(
+				$model_account_order,
+				$is_guest, $product_info,
+				$customer_orders
+			);
+			$threeds_registration_indicator  = RegistrationIndicators::GUEST_CHECKOUT;
+
+			if (!$is_guest) {
+				$threeds_registration_date                = EcomprocessingThreedsHelper::findFirstCustomerOrderDate($customer_orders);
+				$threeds_registration_indicator           = EcomprocessingThreedsHelper::getRegistrationIndicator($threeds_registration_date);
+				$threeds_creation_date                    = EcomprocessingThreedsHelper::getCreationDate($model_account_customer, $order_info['customer_id']);
+
+				$shipping_address_date_first_used         = EcomprocessingThreedsHelper::findShippingAddressDateFirstUsed(
+					$model_account_order,
+					$order_info,
+					$customer_orders
+				);
+				$threads_shipping_address_date_first_used = $shipping_address_date_first_used;
+				$threeds_shipping_address_usage_indicator = EcomprocessingThreedsHelper::getShippingAddressUsageIndicator($shipping_address_date_first_used);
+
+				$orders_for_a_period                      = EcomprocessingThreedsHelper::findNumberOfOrdersForaPeriod(
+					$model_account_order,
+					$customer_orders
+				);
+				$transactions_activity_last_24_hours      = $orders_for_a_period['last_24h'];
+				$transactions_activity_previous_year      = $orders_for_a_period['last_year'];
+				$purchases_count_last_6_months            = $orders_for_a_period['last_6m'];
+			}
 
 			$data = array(
 				'transaction_id'	 => $this->model_extension_payment_ecomprocessing_checkout->genTransactionId(self::PLATFORM_TRANSACTION_PREFIX),
@@ -191,8 +248,26 @@ class ControllerExtensionPaymentEcomprocessingCheckout extends ControllerExtensi
 					'product_order_info' => $product_order_info,
 					'product_info'       => $product_info,
 					'order_totals'       => $order_totals
-				)
+				),
+
+				'is_guest'                        => $is_guest,
+				'threeds_challenge_indicator'     => $threeds_challenge_indicator,
+				'threeds_purchase_category'       => $threeds_purchase_category,
+				'threeds_delivery_timeframe'      => $threeds_delivery_timeframe,
+				'threeds_shipping_indicator'      => $threeds_shipping_indicator,
+				'threeds_reorder_items_indicator' => $threeds_reorder_items_indicator,
+				'threeds_registration_indicator'  => $threeds_registration_indicator,
+				'sca_exemption_value'             => $this->config->get('ecomprocessing_checkout_sca_exemption'),
+				'sca_exemption_amount'            => $this->config->get('ecomprocessing_checkout_sca_exemption_amount'),
 			);
+			if (!$is_guest) {
+				$data['threeds_creation_date']                    = $threeds_creation_date;
+				$data['threads_shipping_address_date_first_used'] = $threads_shipping_address_date_first_used;
+				$data['threeds_shipping_address_usage_indicator'] = $threeds_shipping_address_usage_indicator;
+				$data['transactions_activity_last_24_hours']      = $transactions_activity_last_24_hours;
+				$data['transactions_activity_previous_year']      = $transactions_activity_previous_year;
+				$data['purchases_count_last_6_months']            = $purchases_count_last_6_months;
+			}
 
 			$transaction = $this->model_extension_payment_ecomprocessing_checkout->create($data);
 
