@@ -221,7 +221,8 @@ class EcomprocessingHelper
 	public static function getAvailableBankCodes() {
 		return [
 			\Genesis\API\Constants\Banks::CPI => 'Interac Combined Pay-in',
-			\Genesis\API\Constants\Banks::BCT => 'Bancontact'
+			\Genesis\API\Constants\Banks::BCT => 'Bancontact',
+			\Genesis\API\Constants\Banks::BLK => 'Blik One Click'
 		];
 	}
 

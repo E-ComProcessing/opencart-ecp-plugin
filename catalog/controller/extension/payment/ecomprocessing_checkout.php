@@ -210,7 +210,7 @@ class ControllerExtensionPaymentEcomprocessingCheckout extends ControllerExtensi
 				'language'		     => $this->model_extension_payment_ecomprocessing_checkout->getLanguage(),
 
 				'currency'		     => $this->model_extension_payment_ecomprocessing_checkout->getCurrencyCode(),
-				'amount'			 => $order_info['total'],
+				'amount'			 => (float)$order_info['total'],
 
 				'customer_email'	 => $order_info['email'],
 				'customer_phone'	 => $order_info['telephone'],

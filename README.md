@@ -7,7 +7,7 @@ Requirements
 ------------
 
 * OpenCart 3.0.X - 3.0.3.X (due to architectural changes, this module is __incompatible__ with OpenCart 1.X and 2.0.X)
-* [GenesisPHP v1.21.7](https://github.com/GenesisGateway/genesis_php/tree/1.21.7) - (Integrated in Module)
+* [GenesisPHP v1.24.0](https://github.com/GenesisGateway/genesis_php/tree/1.24.0) - (Integrated in Module)
 
 GenesisPHP Requirements
 ------------
@@ -24,9 +24,9 @@ GenesisPHP Requirements
 Installation via Extension Installer
 ------------
 1.	Download the __E-Comprocessing Payment Gateway__, extract the contents of the folder
-2.	Create a compressed ```zip``` file of the folder ```upload``` with name ```ecomprocessing.ocmod.zip``` (excluding ```README.md```)
+2.	Create a compressed ```zip``` file of the folder ```upload``` with name ```E-Comprocessing.ocmod.zip``` (excluding ```README.md```)
 3.	Login inside the __OpenCart Admin Panel__
-4.	Navigate to ```Extensions -> Installer``` and click on button ```Upload``` and choose the ```zip``` file ```ecomprocessing.ocmod.zip```
+4.	Navigate to ```Extensions -> Installer``` and click on button ```Upload``` and choose the ```zip``` file ```E-Comprocessing.ocmod.zip```
 5.	Navigate to ```Extensions -> Payments``` and click install on ```E-Comprocessing Checkout```
 6.	Set the login credentials (```Username```, ```Password```) and adjust the configuration to your needs.
 
@@ -99,6 +99,7 @@ Supported Transactions & Payment Methods
   * __Online Banking__
     * __Interac Combined Pay-in (CPI)__ 
     * __Bancontact__ 
+    * __Blik One Click (BLK)__
   * __OXXO__
   * __P24__
   * __Pago Facil__
