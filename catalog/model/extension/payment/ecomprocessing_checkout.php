@@ -19,10 +19,17 @@
 
 require_once DIR_APPLICATION . 'model/extension/payment/ecomprocessing/base_model.php';
 
+use Genesis\Genesis;
+use Genesis\Api\Constants\Transaction\States;
+
 /**
  * Front-end model for the "ecomprocessing Checkout" module
  *
  * @package EcomprocessingCheckout
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.LongClassName)
  */
 class ModelExtensionPaymentEcomprocessingCheckout extends ModelExtensionPaymentEcomprocessingBase
 {
@@ -100,7 +107,7 @@ class ModelExtensionPaymentEcomprocessingCheckout extends ModelExtensionPaymentE
 	protected function retrieveConsumerIdFromGenesisGateway($email)
 	{
 		try {
-			$genesis = new \Genesis\Genesis('NonFinancial\Consumers\Retrieve');
+			$genesis = new Genesis('NonFinancial\Consumers\Retrieve');
 			$genesis->request()->setEmail($email);
 
 			$genesis->execute();
@@ -124,7 +131,7 @@ class ModelExtensionPaymentEcomprocessingCheckout extends ModelExtensionPaymentE
 	 */
 	protected function isErrorResponse($response)
 	{
-		$state = new \Genesis\API\Constants\Transaction\States($response->status);
+		$state = new States($response->status);
 
 		return $state->isError();
 	}
@@ -136,6 +143,17 @@ class ModelExtensionPaymentEcomprocessingCheckout extends ModelExtensionPaymentE
 	public function addConsumer($email, $consumer_id)
 	{
 		try {
+			$query = $this->db->query("
+				SELECT * FROM
+					`" . DB_PREFIX . "ecomprocessing_checkout_consumers`
+				WHERE
+					`customer_email` = '" . $this->db->escape($email) . "' LIMIT 1
+			");
+
+			if ($query->num_rows) {
+				return ;
+			}
+
 			$this->db->query("
 				INSERT INTO
 					`" . DB_PREFIX . "ecomprocessing_checkout_consumers` (`customer_email`, `consumer_id`)
@@ -271,14 +289,13 @@ class ModelExtensionPaymentEcomprocessingCheckout extends ModelExtensionPaymentE
 	 * @param $data array Transaction Data
 	 * @return mixed
 	 * @throws Exception
-	 * @throws \Genesis\Exceptions\ErrorAPI
 	 */
 	public function create($data)
 	{
 		try {
 			$this->bootstrap();
 
-			$genesis = new \Genesis\Genesis('WPF\Create');
+			$genesis = new Genesis('Wpf\Create');
 
 			$genesis
 				->request()
@@ -324,13 +341,14 @@ class ModelExtensionPaymentEcomprocessingCheckout extends ModelExtensionPaymentE
 			}
 
 			if ($this->isThreedsAllowed()) {
-				/** @var \Genesis\API\Request\WPF\Create $request */
+				/** @var \Genesis\Api\Request\Wpf\Create $request */
 				$request = $genesis->request();
 				$request->setThreedsV2ControlChallengeIndicator($data['threeds_challenge_indicator'])
 					->setThreedsV2PurchaseCategory($data['threeds_purchase_category'])
 					->setThreedsV2MerchantRiskDeliveryTimeframe($data['threeds_delivery_timeframe'])
 					->setThreedsV2MerchantRiskShippingIndicator($data['threeds_shipping_indicator'])
 					->setThreedsV2MerchantRiskReorderItemsIndicator($data['threeds_reorder_items_indicator'])
+					->setThreedsV2CardHolderAccountRegistrationDate($data['threeds_registration_date'])
 					->setThreedsV2CardHolderAccountRegistrationIndicator($data['threeds_registration_indicator'])
 				;
 				if (!$data['is_guest']) {
@@ -353,9 +371,7 @@ class ModelExtensionPaymentEcomprocessingCheckout extends ModelExtensionPaymentE
 
 			$this->saveWpfTokenizationData($genesis);
 
-			return $genesis->response()->getResponseObject();
-		} catch (\Genesis\Exceptions\ErrorAPI $api) {
-			throw $api;
+			return $genesis->response();
 		} catch (\Exception $exception) {
 			$this->logEx($exception);
 
@@ -409,22 +425,19 @@ class ModelExtensionPaymentEcomprocessingCheckout extends ModelExtensionPaymentE
 	 * @param $unique_id string - Id of a Genesis Transaction
 	 * @return mixed
 	 * @throws Exception
-	 * @throws \Genesis\Exceptions\ErrorAPI
 	 */
 	public function reconcile($unique_id)
 	{
 		try {
 			$this->bootstrap();
 
-			$genesis = new \Genesis\Genesis('WPF\Reconcile');
+			$genesis = new Genesis('Wpf\Reconcile');
 
 			$genesis->request()->setUniqueId($unique_id);
 
 			$genesis->execute();
 
 			return $genesis->response()->getResponseObject();
-		} catch (\Genesis\Exceptions\ErrorAPI $api) {
-			throw $api;
 		} catch (\Exception $exception) {
 			$this->logEx($exception);
 
@@ -444,7 +457,7 @@ class ModelExtensionPaymentEcomprocessingCheckout extends ModelExtensionPaymentE
 			include DIR_APPLICATION . '/../admin/model/extension/payment/ecomprocessing/genesis/vendor/autoload.php';
 
 			\Genesis\Config::setEndpoint(
-				\Genesis\API\Constants\Endpoints::ECOMPROCESSING
+				\Genesis\Api\Constants\Endpoints::ECOMPROCESSING
 			);
 
 			\Genesis\Config::setUsername(
@@ -456,7 +469,7 @@ class ModelExtensionPaymentEcomprocessingCheckout extends ModelExtensionPaymentE
 			);
 
 			\Genesis\Config::setEnvironment(
-				$this->config->get('ecomprocessing_checkout_sandbox') ? \Genesis\API\Constants\Environments::STAGING : \Genesis\API\Constants\Environments::PRODUCTION
+				$this->config->get('ecomprocessing_checkout_sandbox') ? \Genesis\Api\Constants\Environments::STAGING : \Genesis\Api\Constants\Environments::PRODUCTION
 			);
 		}
 	}
@@ -489,9 +502,7 @@ class ModelExtensionPaymentEcomprocessingCheckout extends ModelExtensionPaymentE
 
 		$this->bootstrap();
 
-		$is_available = @constant('\Genesis\API\Constants\i18n::' . strtoupper($language_code));
-
-		if ($is_available) {
+		if (defined('\Genesis\Api\Constants\i18n::' . strtoupper($language_code))) {
 			return strtolower($language_code);
 		} else {
 			return 'en';
@@ -599,28 +610,23 @@ class ModelExtensionPaymentEcomprocessingCheckout extends ModelExtensionPaymentE
 		$selected_types = $this->orderCardTransactionTypes(
 			$this->config->get('ecomprocessing_checkout_transaction_type')
 		);
-		$methods        = \Genesis\API\Constants\Payment\Methods::getMethods();
 
-		foreach ($methods as $method) {
-			$alias_map[$method . self::PPRO_TRANSACTION_SUFFIX] = \Genesis\API\Constants\Transaction\Types::PPRO;
-		}
-
-		$alias_map = array_merge($alias_map, [
+		$alias_map = [
 			self::GOOGLE_PAY_TRANSACTION_PREFIX . self::GOOGLE_PAY_PAYMENT_TYPE_AUTHORIZE =>
-				\Genesis\API\Constants\Transaction\Types::GOOGLE_PAY,
+				\Genesis\Api\Constants\Transaction\Types::GOOGLE_PAY,
 			self::GOOGLE_PAY_TRANSACTION_PREFIX . self::GOOGLE_PAY_PAYMENT_TYPE_SALE      =>
-				\Genesis\API\Constants\Transaction\Types::GOOGLE_PAY,
+				\Genesis\Api\Constants\Transaction\Types::GOOGLE_PAY,
 			self::PAYPAL_TRANSACTION_PREFIX . self::PAYPAL_PAYMENT_TYPE_AUTHORIZE         =>
-				\Genesis\API\Constants\Transaction\Types::PAY_PAL,
+				\Genesis\Api\Constants\Transaction\Types::PAY_PAL,
 			self::PAYPAL_TRANSACTION_PREFIX . self::PAYPAL_PAYMENT_TYPE_SALE              =>
-				\Genesis\API\Constants\Transaction\Types::PAY_PAL,
+				\Genesis\Api\Constants\Transaction\Types::PAY_PAL,
 			self::PAYPAL_TRANSACTION_PREFIX . self::PAYPAL_PAYMENT_TYPE_EXPRESS           =>
-				\Genesis\API\Constants\Transaction\Types::PAY_PAL,
+				\Genesis\Api\Constants\Transaction\Types::PAY_PAL,
 			self::APPLE_PAY_TRANSACTION_PREFIX . self::APPLE_PAY_PAYMENT_TYPE_AUTHORIZE   =>
-				\Genesis\API\Constants\Transaction\Types::APPLE_PAY,
+				\Genesis\Api\Constants\Transaction\Types::APPLE_PAY,
 			self::APPLE_PAY_TRANSACTION_PREFIX . self::APPLE_PAY_PAYMENT_TYPE_SALE        =>
-				\Genesis\API\Constants\Transaction\Types::APPLE_PAY,
-		]);
+				\Genesis\Api\Constants\Transaction\Types::APPLE_PAY,
+		];
 
 		foreach ($selected_types as $selected_type) {
 			if (array_key_exists($selected_type, $alias_map)) {
@@ -634,7 +640,6 @@ class ModelExtensionPaymentEcomprocessingCheckout extends ModelExtensionPaymentE
 				$processed_list[$transaction_type]['parameters'][] = array(
 					$key => str_replace(
 						[
-							self::PPRO_TRANSACTION_SUFFIX,
 							self::GOOGLE_PAY_TRANSACTION_PREFIX,
 							self::PAYPAL_TRANSACTION_PREFIX,
 							self::APPLE_PAY_TRANSACTION_PREFIX
@@ -690,28 +695,29 @@ class ModelExtensionPaymentEcomprocessingCheckout extends ModelExtensionPaymentE
 	 * @param array $order Transformed Order Array
 	 * @return array
 	 * @throws \Genesis\Exceptions\ErrorParameter
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	public function getCustomRequiredAttributes($type, $order)
 	{
 		$parameters = array();
 		switch ($type) {
-			case \Genesis\API\Constants\Transaction\Types::IDEBIT_PAYIN:
-			case \Genesis\API\Constants\Transaction\Types::INSTA_DEBIT_PAYIN:
+			case \Genesis\Api\Constants\Transaction\Types::IDEBIT_PAYIN:
+			case \Genesis\Api\Constants\Transaction\Types::INSTA_DEBIT_PAYIN:
 				$parameters = array(
 					'customer_account_id' => $order['additional']['user_hash']
 				);
 				break;
-			case \Genesis\API\Constants\Transaction\Types::KLARNA_AUTHORIZE:
+			case \Genesis\Api\Constants\Transaction\Types::KLARNA_AUTHORIZE:
 				$parameters = EcomprocessingHelper::getKlarnaCustomParamItems($order)->toArray();
 				break;
-			case \Genesis\API\Constants\Transaction\Types::TRUSTLY_SALE:
+			case \Genesis\Api\Constants\Transaction\Types::TRUSTLY_SALE:
 				$current_user_id = $order['additional']['user_id'];
 				$user_id         = ($current_user_id > 0) ? $current_user_id : $order['additional']['user_hash'];
 				$parameters = array(
 					'user_id' => $user_id
 				);
 				break;
-			case \Genesis\API\Constants\Transaction\Types::ONLINE_BANKING_PAYIN:
+			case \Genesis\Api\Constants\Transaction\Types::ONLINE_BANKING_PAYIN:
 				$selected_bank_codes = $this->config->get('ecomprocessing_checkout_bank_codes');
 
 				if (\Genesis\Utils\Common::isValidArray($selected_bank_codes)) {
@@ -723,7 +729,7 @@ class ModelExtensionPaymentEcomprocessingCheckout extends ModelExtensionPaymentE
 					);
 				}
 				break;
-			case \Genesis\API\Constants\Transaction\Types::PAYSAFECARD:
+			case \Genesis\Api\Constants\Transaction\Types::PAYSAFECARD:
 				$current_user_id = $order['additional']['user_id'];
 				$customer_id     = ($current_user_id > 0) ? $current_user_id : $order['additional']['user_hash'];
 				$parameters      = array(
@@ -773,7 +779,7 @@ class ModelExtensionPaymentEcomprocessingCheckout extends ModelExtensionPaymentE
 	public function logEx($exception)
 	{
 		if ($this->config->get('ecomprocessing_checkout_debug')) {
-			$log = new Log('Ecomprocessing_checkout.log');
+			$log = new Log('ecomprocessing_checkout.log');
 			$log->write($this->jTraceEx($exception));
 		}
 	}
@@ -839,14 +845,11 @@ class ModelExtensionPaymentEcomprocessingCheckout extends ModelExtensionPaymentE
 	private function getCustomParameterKey($transaction_type)
 	{
 		switch ($transaction_type) {
-			case \Genesis\API\Constants\Transaction\Types::PPRO:
-				$result = 'payment_method';
-				break;
-			case \Genesis\API\Constants\Transaction\Types::PAY_PAL:
+			case \Genesis\Api\Constants\Transaction\Types::PAY_PAL:
 				$result = 'payment_type';
 				break;
-			case \Genesis\API\Constants\Transaction\Types::GOOGLE_PAY:
-			case \Genesis\API\Constants\Transaction\Types::APPLE_PAY:
+			case \Genesis\Api\Constants\Transaction\Types::GOOGLE_PAY:
+			case \Genesis\Api\Constants\Transaction\Types::APPLE_PAY:
 				$result = 'payment_subtype';
 				break;
 			default:
@@ -864,7 +867,7 @@ class ModelExtensionPaymentEcomprocessingCheckout extends ModelExtensionPaymentE
 	 */
 	private function orderCardTransactionTypes($selected_types)
 	{
-		$custom_order = \Genesis\API\Constants\Transaction\Types::getCardTransactionTypes();
+		$custom_order = \Genesis\Api\Constants\Transaction\Types::getCardTransactionTypes();
 
 		asort($selected_types);
 

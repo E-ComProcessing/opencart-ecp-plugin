@@ -25,6 +25,7 @@ if (!class_exists('ControllerExtensionPaymentEcomprocessingBase')) {
  * Backend controller for the "ecomprocessing Checkout" module
  *
  * @package EcomprocessingCheckout
+ * @SuppressWarnings(PHPMD.LongClassName)
  */
 class ControllerExtensionPaymentEcomprocessingCheckout extends ControllerExtensionPaymentEcomprocessingBase
 {

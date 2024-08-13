@@ -21,6 +21,7 @@
  * Base Abstract Class for Method Front Controllers
  *
  * Class ControllerExtensionPaymentEcomprocessingBase
+ * @SuppressWarnings(PHPMD.LongClassName)
  */
 abstract class ControllerExtensionPaymentEcomprocessingBase extends Controller
 {

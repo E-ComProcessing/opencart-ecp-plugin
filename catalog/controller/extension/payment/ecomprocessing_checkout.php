@@ -17,9 +17,10 @@
  * @license	 http://opensource.org/licenses/gpl-2.0.php GNU General Public License, version 2 (GPL-2.0)
  */
 
-use Genesis\API\Constants\Transaction\Parameters\Threeds\V2\CardHolderAccount\RegistrationIndicators;
-use Genesis\API\Constants\Transaction\Parameters\Threeds\V2\MerchantRisk\DeliveryTimeframes;
-use Genesis\API\Constants\Transaction\Parameters\Threeds\V2\Purchase\Categories;
+use Genesis\Api\Constants\Transaction\Parameters\Threeds\V2\CardHolderAccount\RegistrationIndicators;
+use Genesis\Api\Constants\Transaction\Parameters\Threeds\V2\MerchantRisk\DeliveryTimeframes;
+use Genesis\Api\Constants\Transaction\Parameters\Threeds\V2\Purchase\Categories;
+use Genesis\Api\Notification;
 
 if (!class_exists('ControllerExtensionPaymentEcomprocessingBase')) {
 	require_once DIR_APPLICATION . "controller/extension/payment/ecomprocessing/base_controller.php";
@@ -31,6 +32,8 @@ if (!class_exists('ControllerExtensionPaymentEcomprocessingBase')) {
  * @package EcomprocessingCheckout
  *
  * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.LongClassName)
  */
 class ControllerExtensionPaymentEcomprocessingCheckout extends ControllerExtensionPaymentEcomprocessingBase
 {
@@ -125,6 +128,9 @@ class ControllerExtensionPaymentEcomprocessingCheckout extends ControllerExtensi
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.LongVariable)
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 */
 	public function send()
 	{
@@ -174,6 +180,7 @@ class ControllerExtensionPaymentEcomprocessingCheckout extends ControllerExtensi
 				$customer_orders
 			);
 			$threeds_registration_indicator  = RegistrationIndicators::GUEST_CHECKOUT;
+			$threeds_registration_date       = null;
 
 			if (!$is_guest) {
 				$threeds_registration_date                = EcomprocessingThreedsHelper::findFirstCustomerOrderDate($customer_orders);
@@ -257,6 +264,7 @@ class ControllerExtensionPaymentEcomprocessingCheckout extends ControllerExtensi
 				'threeds_shipping_indicator'      => $threeds_shipping_indicator,
 				'threeds_reorder_items_indicator' => $threeds_reorder_items_indicator,
 				'threeds_registration_indicator'  => $threeds_registration_indicator,
+				'threeds_registration_date' 	  => $threeds_registration_date,
 				'sca_exemption_value'             => $this->config->get('ecomprocessing_checkout_sca_exemption'),
 				'sca_exemption_amount'            => $this->config->get('ecomprocessing_checkout_sca_exemption_amount'),
 			);
@@ -269,8 +277,13 @@ class ControllerExtensionPaymentEcomprocessingCheckout extends ControllerExtensi
 				$data['purchases_count_last_6_months']            = $purchases_count_last_6_months;
 			}
 
-			$transaction = $this->model_extension_payment_ecomprocessing_checkout->create($data);
+			$transaction_response = $this->model_extension_payment_ecomprocessing_checkout->create($data);
 
+            if (!$transaction_response->isSuccessful()) {
+                throw new Exception($transaction_response->getErrorDescription());
+            }
+
+            $transaction = $transaction_response->getResponseObject();
 			if (isset($transaction->unique_id)) {
 				$timestamp = ($transaction->timestamp instanceof \DateTime) ? $transaction->timestamp->format('c') : $transaction->timestamp;
 
@@ -329,6 +342,9 @@ class ControllerExtensionPaymentEcomprocessingCheckout extends ControllerExtensi
 	 * Process Gateway Notification
 	 *
 	 * @return void
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 */
 	public function callback()
 	{
@@ -340,9 +356,7 @@ class ControllerExtensionPaymentEcomprocessingCheckout extends ControllerExtensi
 		try {
 			$this->model_extension_payment_ecomprocessing_checkout->bootstrap();
 
-			$notification = new \Genesis\API\Notification(
-				$this->request->post
-			);
+			$notification = new Notification($this->request->post);
 
 			if ($notification->isAuthentic()) {
 				$notification->initReconciliation();
@@ -398,7 +412,7 @@ class ControllerExtensionPaymentEcomprocessingCheckout extends ControllerExtensi
 					}
 
 					switch ($wpf_reconcile->status) {
-						case \Genesis\API\Constants\Transaction\States::APPROVED:
+						case \Genesis\Api\Constants\Transaction\States::APPROVED:
 							$this->model_checkout_order->addOrderHistory(
 								$transaction['order_id'],
 								$this->config->get('ecomprocessing_checkout_order_status_id'),
@@ -406,8 +420,8 @@ class ControllerExtensionPaymentEcomprocessingCheckout extends ControllerExtensi
 								true
 							);
 							break;
-						case \Genesis\API\Constants\Transaction\States::DECLINED:
-						case \Genesis\API\Constants\Transaction\States::ERROR:
+						case \Genesis\Api\Constants\Transaction\States::DECLINED:
+						case \Genesis\Api\Constants\Transaction\States::ERROR:
 							$this->model_checkout_order->addOrderHistory(
 								$transaction['order_id'],
 								$this->config->get('ecomprocessing_checkout_order_failure_status_id'),
