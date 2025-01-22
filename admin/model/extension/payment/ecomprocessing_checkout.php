@@ -41,7 +41,7 @@ class ModelExtensionPaymentEcomprocessingCheckout extends Model
 	 *
 	 * @var string
 	 */
-	protected $module_version = '1.6.9';
+	protected $module_version = '1.7.0';
 
 	/**
 	 * Perform installation logic
